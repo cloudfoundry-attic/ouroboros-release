@@ -1,0 +1,9 @@
+/pkg
+/bin
+*.test
+*.coverprofile
+/.blobs
+/blobs
+/.dev_builds
+/dev_releases
+/config/private.yml

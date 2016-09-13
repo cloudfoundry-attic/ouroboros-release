@@ -1,0 +1,42 @@
+#!/bin/bash -e
+
+RUN_DIR=/var/vcap/sys/run/ouroboros
+LOG_DIR=/var/vcap/sys/log/ouroboros
+PIDFILE=$RUN_DIR/ouroboros.pid
+
+case $1 in
+
+start)
+
+mkdir -p $RUN_DIR
+mkdir -p $LOG_DIR
+
+chown -R vcap:vcap $LOG_DIR
+
+exec >>$LOG_DIR/ouroboros.stdout.log \
+    2>>$LOG_DIR/ouroboros.stderr.log
+
+export TC_ADDRESS="<% p("loggregator.traffic_controller_url") %>"
+export METRON_PORT="<% p("metron.listening_port") %>"
+export UAA_ADDRESS="<% p("uaa.url") %>"
+export CLIENT_ID="<% p("uaa.client_id") %>"
+export CLIENT_SECRET="<% p("uaa.client_secret") %>"
+export SUBSCRIPTION_ID="<% p("ouroboros.subscription_id") %>"
+chpst -u vcap:vcap /var/vcap/packages/ouroboros/ouroboros
+
+echo $! > $PIDFILE
+
+;;
+
+stop)
+kill -9 `cat $PIDFILE`
+rm -f $PIDFILE
+
+;;
+
+*)
+echo "Usage: $0 {start|stop}"
+
+;;
+
+esac

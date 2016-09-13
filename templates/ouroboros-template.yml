@@ -1,0 +1,52 @@
+---
+meta: (( merge ))
+
+name: (( merge ))
+director_uuid: (( merge ))
+releases:
+  - name: ouroboros
+    version: latest
+
+compilation:
+  workers: (( merge ))
+  network: ouroboros-net
+  reuse_compilation_vms: true
+  cloud_properties: (( merge ))
+
+update:
+  canaries: 1
+  canary_watch_time: 30000-100000
+  update_watch_time: 30000-100000
+  max_in_flight: 1
+  max_errors: 1
+
+networks:
+- name: ouroboros-net
+  subnets: (( merge ))
+
+resource_pools:
+- name: ouroboros
+  network: ouroboros-net
+  stemcell: (( meta.stemcell ))
+  cloud_properties: (( merge ))
+
+jobs:
+- name: ouroboros
+  memory_mb: 2048
+  templates:
+    - {name: ouroboros, release: ouroboros}
+  instances: (( merge ))
+  resource_pool: ouroboros
+  networks: (( merge ))
+
+properties:
+  loggregator:
+    traffic_controller_url: (( merge ))
+  uaa:
+    url: (( merge ))
+    client_id: (( merge ))
+    client_secret: (( merge ))
+  metron:
+    listening_port: (( merge ))
+  ouroboros:
+    subscription_id: (( merge ))

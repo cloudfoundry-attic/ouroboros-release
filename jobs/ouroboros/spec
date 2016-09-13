@@ -1,0 +1,21 @@
+---
+name: ouroboros
+templates:
+  ouroboros-ctl.erb: bin/ouroboros-ctl
+
+packages:
+- ouroboros
+
+properties:
+  loggregator.traffic_controller_url:
+    description: "Traffic controller URL"
+
+  uaa.url:
+    description: "URL for the UAA server"
+  uaa.client_id:
+    description: "The client who has access to the loggregator firehose"
+  uaa.client_secret:
+    description: "The secret for the client"
+
+  ouroboros.subscription_id:
+    description: "The subscription id to be used for the firehose"

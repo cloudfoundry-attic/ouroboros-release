@@ -1,0 +1,9 @@
+---
+name: ouroboros
+
+dependencies:
+- golang1.7
+
+files:
+- github.com/cloudfoundry-incubator/ouroboros/**/*
+

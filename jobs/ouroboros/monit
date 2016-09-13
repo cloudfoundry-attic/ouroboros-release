@@ -1,0 +1,5 @@
+check process ouroboros
+  with pidfile /var/vcap/sys/run/ouroboros/ouroboros.pid
+  start program "/var/vcap/jobs/ouroboros/bin/ouroboros-ctl start"
+  stop program "/var/vcap/jobs/ouroboros/bin/ouroboros-ctl stop"
+  group vcap
