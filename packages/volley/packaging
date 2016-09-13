@@ -1,0 +1,8 @@
+set -e -x
+
+export GOROOT=$(readlink -nf /var/vcap/packages/golang1.7)
+export PATH=$GOROOT/bin:$PATH
+export GOPATH=$PWD/ouroboros-release
+
+go install volley
+cp -a $PWD/ouroboros-release/bin/volley ${BOSH_INSTALL_TARGET}

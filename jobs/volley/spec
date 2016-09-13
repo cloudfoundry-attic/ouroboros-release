@@ -1,0 +1,24 @@
+---
+name: volley
+templates:
+  volley_ctl.erb: bin/volley_ctl
+  volley.json.erb: config/volley.json
+
+packages:
+- loggregator_common
+- volley
+
+properties:
+  volley.firehose_count:
+    description: "Number of Firehose connections to open"
+    default: 10
+  volley.stream_count:
+    description: "Number of Stream connections to open. AppID must be set"
+  volley.app_id:
+    description: "AppID to create stream connections to"
+    default: ""
+  volley.tc_addresses:
+    description: "IPs of the TrafficControllers to connect to"
+  volley.auth_token:
+    description: "AuthToken used to confirm access to logs"
+    default: ""

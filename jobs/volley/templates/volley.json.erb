@@ -1,0 +1,7 @@
+{
+  "TCAddresses": [<%= p("volley.tc_addresses").map{|addr| "\"ws://#{addr}:8081\""}.join(",")%>],
+  "AppID":  "<%= p("volley.app_id") %>",
+  "FirehoseCount":  "<%= p("volley.firehose_count") %>",
+  "StreamCount":  "<%= p("volley.stream_count") %>",
+  "AuthToken":  "<%= p("volley.auth_token") %>"
+}
