@@ -1,5 +1,5 @@
-check process loggregator_volley
-  with pidfile /var/vcap/sys/run/loggregator_volley/loggregator_volley.pid
-  start program "/var/vcap/jobs/loggregator_volley/bin/loggregator_volley_ctl start"
-  stop program "/var/vcap/jobs/loggregator_volley/bin/loggregator_volley_ctl stop"
+check process volley
+  with pidfile /var/vcap/sys/run/volley/volley.pid
+  start program "/var/vcap/jobs/volley/bin/volley_ctl start"
+  stop program "/var/vcap/jobs/volley/bin/volley_ctl stop"
   group vcap

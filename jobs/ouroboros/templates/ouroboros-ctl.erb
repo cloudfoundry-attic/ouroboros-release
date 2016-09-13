@@ -22,7 +22,7 @@ export UAA_ADDRESS="<% p("uaa.url") %>"
 export CLIENT_ID="<% p("uaa.client_id") %>"
 export CLIENT_SECRET="<% p("uaa.client_secret") %>"
 export SUBSCRIPTION_ID="<% p("ouroboros.subscription_id") %>"
-chpst -u vcap:vcap /var/vcap/packages/ouroboros/ouroboros
+chpst -u vcap:vcap /var/vcap/packages/ouroboros/bin/ouroboros
 
 echo $! > $PIDFILE
 

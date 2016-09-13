@@ -22,7 +22,7 @@ case $1 in
 
     chown -R vcap:vcap $LOG_DIR
 
-    chpst -u vcap:vcap /var/vcap/packages/volley/volley  \
+    chpst -u vcap:vcap /var/vcap/packages/volley/bin/volley  \
          --config /var/vcap/jobs/volley/config/volley.json &
 
     echo $! > $PIDFILE

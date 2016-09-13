@@ -10,6 +10,9 @@ properties:
   loggregator.traffic_controller_url:
     description: "Traffic controller URL"
 
+  metron.listening_port:
+    description: "Metron Listening Port"
+
   uaa.url:
     description: "URL for the UAA server"
   uaa.client_id:

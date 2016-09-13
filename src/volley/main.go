@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	configFilePath = flag.String("config", "config/loggregator_volley.json", "Location of the config json file")
+	configFilePath = flag.String("config", "config/volley.json", "Location of the config json file")
 )
 
 func main() {

@@ -1,7 +1,15 @@
-{
-  "TCAddresses": [<%= p("volley.tc_addresses").map{|addr| "\"ws://#{addr}:8081\""}.join(",")%>],
-  "AppID":  "<%= p("volley.app_id") %>",
-  "FirehoseCount":  "<%= p("volley.firehose_count") %>",
-  "StreamCount":  "<%= p("volley.stream_count") %>",
-  "AuthToken":  "<%= p("volley.auth_token") %>"
-}
+<%=
+
+tc_addrs = p("volley.tc_addresses").map do |addr|
+    "ws://#{addr}:8081"
+end
+
+JSON.pretty_generate(
+  "TCAddresses" => tc_addrs,
+  "AppID" => p("volley.app_id"),
+  "FirehoseCount" => p("volley.firehose_count"),
+  "StreamCount" => p("volley.stream_count"),
+  "AuthToken" => p("volley.auth_token"),
+)
+
+%>
