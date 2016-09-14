@@ -22,3 +22,6 @@ properties:
   volley.auth_token:
     description: "AuthToken used to confirm access to logs"
     default: ""
+  volley.subscription_id:
+    description: "Firehose subscription id"
+    default: ""
