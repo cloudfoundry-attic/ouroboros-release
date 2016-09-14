@@ -42,7 +42,7 @@ var _ = Describe("ouroboros", func() {
 		go listener.Listen()
 		defer listener.Close()
 
-		path, err := gexec.Build("github.com/cloudfoundry-incubator/ouroboros")
+		path, err := gexec.Build("ouroboros")
 		Expect(err).ToNot(HaveOccurred())
 		cmd := exec.Command(path)
 		cmd.Env = []string{
