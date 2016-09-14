@@ -17,6 +17,9 @@ case $1 in
   start)
     pid_guard $PIDFILE "LoggregatorVolley"
 
+    ulimit -l unlimited
+    ulimit -n 65536
+
     exec >>$LOG_DIR/volley.stdout.log \
         2>>$LOG_DIR/volley.stderr.log
 
