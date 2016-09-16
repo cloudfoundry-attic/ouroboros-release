@@ -4,11 +4,15 @@ import (
 	"crypto/tls"
 	"log"
 	"net"
+	"fmt"
+	"time"
+	"net/http"
 
 	"github.com/bradylove/envstruct"
 	"github.com/cloudfoundry-incubator/uaago"
-	"github.com/cloudfoundry/noaa/consumer"
+	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gorilla/websocket"
 )
 
 type config struct {
@@ -35,12 +39,21 @@ func main() {
 	if err != nil {
 		log.Panicf("Error getting token from uaa: %s", err)
 	}
-	consumer := consumer.New(conf.TCAddr, &tls.Config{InsecureSkipVerify: true}, nil)
-	msgs, errs := consumer.Firehose(conf.SubID, token)
-	go func() {
-		err := <-errs
-		log.Panicf("received %s", err)
-	}()
+
+	dialer := websocket.Dialer{HandshakeTimeout: 10*time.Second, TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	header := make(http.Header)
+	header.Set("Origin", "http://localhost")
+	header.Set("Authorization", token)
+	url := conf.TCAddr + "/firehose/" + conf.SubID
+	log.Printf("Connecting to traffic controller at %s", url)
+	ws, resp, err := dialer.Dial(url, header)
+	if resp != nil && resp.StatusCode != http.StatusSwitchingProtocols {
+		panic(fmt.Sprintf("Unexpected status %s", resp.Status))
+	}
+	if err != nil {
+		panic(err)
+	}
+	defer ws.Close()
 
 	metronAddr := net.UDPAddr{
 		Port: conf.MetronPort,
@@ -52,15 +65,33 @@ func main() {
 		log.Panicf("could not connect to metron: %s", err)
 	}
 	defer conn.Close()
-	for msg := range msgs {
-		b, err := proto.Marshal(msg)
+	for count := uint64(0); ; count++ {
+		_, b, err := ws.ReadMessage()
 		if err != nil {
-			log.Panicf("could not marshal envelope: %s", err)
+			log.Panicf("could not read websocket message: %s", err)
 		}
-
 		_, err = conn.Write(b)
 		if err != nil {
 			log.Panicf("could not write to metron: %s", err)
+		}
+		if count % 1000 == 0 {
+			message, err := proto.Marshal(&events.Envelope{
+				Origin: proto.String("ouroboros"),
+				Timestamp: proto.Int64(time.Now().UnixNano()),
+				EventType: events.Envelope_CounterEvent.Enum(),
+				CounterEvent: &events.CounterEvent{
+					Name: proto.String("ouroboros.forwardedMessages"),
+					Delta: proto.Uint64(1000),
+					Total: proto.Uint64(count),
+				},
+			})
+			if err != nil {
+				log.Panicf("Failed to marshal count: %s", err)
+			}
+			_, err = conn.Write(message)
+			if err != nil {
+				log.Panicf("could not write to metron: %s", err)
+			}
 		}
 	}
 }
