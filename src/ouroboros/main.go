@@ -2,11 +2,11 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net"
-	"fmt"
-	"time"
 	"net/http"
+	"time"
 
 	"github.com/bradylove/envstruct"
 	"github.com/cloudfoundry-incubator/uaago"
@@ -40,7 +40,7 @@ func main() {
 		log.Panicf("Error getting token from uaa: %s", err)
 	}
 
-	dialer := websocket.Dialer{HandshakeTimeout: 10*time.Second, TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	dialer := websocket.Dialer{HandshakeTimeout: 10 * time.Second, TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	header := make(http.Header)
 	header.Set("Origin", "http://localhost")
 	header.Set("Authorization", token)
@@ -74,13 +74,13 @@ func main() {
 		if err != nil {
 			log.Panicf("could not write to metron: %s", err)
 		}
-		if count % 1000 == 0 {
+		if count%1000 == 0 {
 			message, err := proto.Marshal(&events.Envelope{
-				Origin: proto.String("ouroboros"),
+				Origin:    proto.String("ouroboros"),
 				Timestamp: proto.Int64(time.Now().UnixNano()),
 				EventType: events.Envelope_CounterEvent.Enum(),
 				CounterEvent: &events.CounterEvent{
-					Name: proto.String("ouroboros.forwardedMessages"),
+					Name:  proto.String("ouroboros.forwardedMessages"),
 					Delta: proto.Uint64(1000),
 					Total: proto.Uint64(count),
 				},
