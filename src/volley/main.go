@@ -17,17 +17,18 @@ var (
 
 func main() {
 	flag.Parse()
-	config, err := config.ParseConfig(*configFilePath)
+	config, err := config.ParseFile(*configFilePath)
 	if err != nil {
 		panic(fmt.Errorf("Unable to parse config: %s", err))
 	}
-	conn := connectionmanager.New(config)
+	idStore := connectionmanager.NewIDStore(config.StreamCount)
+	conn := connectionmanager.New(config, idStore)
 
 	for i := 0; i < config.StreamCount; i++ {
-		go conn.NewStream()
+		go conn.Stream()
 	}
 	for i := 0; i < config.FirehoseCount; i++ {
-		go conn.NewFirehose()
+		go conn.Firehose()
 	}
 
 	terminate := make(chan os.Signal, 1)

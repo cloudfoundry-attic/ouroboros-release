@@ -1,22 +1,36 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
 	"os"
+	"time"
 )
+
+type Duration struct {
+	time.Duration
+}
+
+func (d *Duration) UnmarshalJSON(v []byte) error {
+	s := string(bytes.Trim(v, `"`))
+	var err error
+	d.Duration, err = time.ParseDuration(s)
+	return err
+}
 
 type Config struct {
 	TCAddresses    []string
 	AuthToken      string
 	FirehoseCount  int
 	StreamCount    int
-	SubscriptionId string
-	AppID          string
+	SubscriptionID string
+	MinDelay       Duration
+	MaxDelay       Duration
 }
 
-func ParseConfig(configFile string) (*Config, error) {
+func ParseFile(configFile string) (*Config, error) {
 	file, err := os.Open(configFile)
 	if err != nil {
 		return nil, err
@@ -36,12 +50,8 @@ func Parse(reader io.Reader) (*Config, error) {
 		return nil, errors.New("At least one TrafficController URL is required")
 	}
 
-	if config.StreamCount > 0 && config.AppID == "" {
-		return nil, errors.New("AppID is required to make stream connections")
-	}
-
-	if config.SubscriptionId == "" {
-		config.SubscriptionId = "default"
+	if config.SubscriptionID == "" {
+		config.SubscriptionID = "default"
 	}
 
 	if os.Getenv("AUTHTOKEN") != "" {

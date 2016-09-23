@@ -5,18 +5,27 @@ import (
 	"log"
 	"math/rand"
 	"sync"
+	"time"
 	"volley/config"
 
+	"github.com/cloudfoundry/dropsonde/envelope_extensions"
 	"github.com/cloudfoundry/noaa/consumer"
+	"github.com/cloudfoundry/sonde-go/events"
 )
+
+type AppIDStore interface {
+	Add(appID string)
+	Get() string
+}
 
 type ConnectionManager struct {
 	consumers    []*consumer.Consumer
 	consumerLock sync.Mutex
 	conf         *config.Config
+	appStore     AppIDStore
 }
 
-func New(conf *config.Config) *ConnectionManager {
+func New(conf *config.Config, appStore AppIDStore) *ConnectionManager {
 	var consumers []*consumer.Consumer
 	for _, tcAddress := range conf.TCAddresses {
 		c := consumer.New(tcAddress, &tls.Config{InsecureSkipVerify: true}, nil)
@@ -26,6 +35,7 @@ func New(conf *config.Config) *ConnectionManager {
 	return &ConnectionManager{
 		conf:      conf,
 		consumers: consumers,
+		appStore:  appStore,
 	}
 }
 
@@ -37,29 +47,37 @@ func (c *ConnectionManager) pick() *consumer.Consumer {
 	return c.consumers[pos]
 }
 
-func (c *ConnectionManager) NewFirehose() {
-	log.Print("Creating New Firehose Connection")
+func (c *ConnectionManager) Firehose() {
 	consumer := c.pick()
-	msgs, errs := consumer.FirehoseWithoutReconnect(c.conf.SubscriptionId, c.conf.AuthToken)
-	go func() {
-		for range msgs {
-		}
-	}()
+	msgs, errs := consumer.FirehoseWithoutReconnect(c.conf.SubscriptionID, c.conf.AuthToken)
+	go c.consume(msgs)
 	for err := range errs {
-		log.Printf("Error from %s: %v\n", c.conf.SubscriptionId, err.Error())
+		log.Printf("Error from %s: %v\n", c.conf.SubscriptionID, err.Error())
 	}
 }
 
-func (c *ConnectionManager) NewStream() {
-	log.Print("Creating New Stream Connection")
+func (c *ConnectionManager) Stream() {
 	consumer := c.pick()
-	msgs, errs := consumer.StreamWithoutReconnect(c.conf.AppID, c.conf.AuthToken)
-	go func() {
-		for range msgs {
-		}
-	}()
+	appID := c.appStore.Get()
+	msgs, errs := consumer.StreamWithoutReconnect(appID, c.conf.AuthToken)
+	go c.consume(msgs)
 	for err := range errs {
-		log.Printf("Error from %s: %v\n", c.conf.AppID, err.Error())
+		log.Printf("Error from %s: %v\n", appID, err.Error())
+	}
+}
+
+func (c *ConnectionManager) consume(msgs <-chan *events.Envelope) {
+	delta := int(c.conf.MaxDelay.Duration - c.conf.MinDelay.Duration)
+	for msg := range msgs {
+		appID := envelope_extensions.GetAppId(msg)
+		if appID != "" {
+			c.appStore.Add(appID)
+		}
+		if delta == 0 {
+			continue
+		}
+		delay := c.conf.MinDelay.Duration + time.Duration(rand.Intn(delta))
+		time.Sleep(delay)
 	}
 }
 
