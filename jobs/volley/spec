@@ -2,7 +2,6 @@
 name: volley
 templates:
   volley_ctl.erb: bin/volley_ctl
-  volley.json.erb: config/volley.json
 
 packages:
 - loggregator_common
@@ -14,9 +13,6 @@ properties:
     default: 10
   volley.stream_count:
     description: "Number of Stream connections to open. AppID must be set"
-  volley.app_id:
-    description: "AppID to create stream connections to"
-    default: ""
   volley.tc_addresses:
     description: "IPs of the TrafficControllers to connect to"
   volley.auth_token:
@@ -25,3 +21,9 @@ properties:
   volley.subscription_id:
     description: "Firehose subscription id"
     default: ""
+  volley.receive_delay:
+    description: "Range of durations to delay each time a message is received"
+    default: "1ms-100ms"
+  volley.kill_delay:
+    description: "Range of durations to delay before killing the process with SIGKILL"
+    default: "1m-1h"

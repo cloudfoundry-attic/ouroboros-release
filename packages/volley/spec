@@ -5,6 +5,9 @@ dependencies:
 - golang1.7
 
 files:
+- github.com/bradylove/envstruct/*.go
+- github.com/bradylove/envstruct/*.go # gosub
+- github.com/cloudfoundry/dropsonde/envelope_extensions/*.go # gosub
 - github.com/cloudfoundry/noaa/*.go # gosub
 - github.com/cloudfoundry/noaa/consumer/*.go # gosub
 - github.com/cloudfoundry/noaa/consumer/internal/*.go # gosub

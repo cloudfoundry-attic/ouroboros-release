@@ -21,11 +21,11 @@ type AppIDStore interface {
 type ConnectionManager struct {
 	consumers    []*consumer.Consumer
 	consumerLock sync.Mutex
-	conf         *config.Config
+	conf         config.Config
 	appStore     AppIDStore
 }
 
-func New(conf *config.Config, appStore AppIDStore) *ConnectionManager {
+func New(conf config.Config, appStore AppIDStore) *ConnectionManager {
 	var consumers []*consumer.Consumer
 	for _, tcAddress := range conf.TCAddresses {
 		c := consumer.New(tcAddress, &tls.Config{InsecureSkipVerify: true}, nil)
@@ -67,7 +67,7 @@ func (c *ConnectionManager) Stream() {
 }
 
 func (c *ConnectionManager) consume(msgs <-chan *events.Envelope) {
-	delta := int(c.conf.MaxDelay.Duration - c.conf.MinDelay.Duration)
+	delta := int(c.conf.ReceiveDelay.Max - c.conf.ReceiveDelay.Min)
 	for msg := range msgs {
 		appID := envelope_extensions.GetAppId(msg)
 		if appID != "" {
@@ -76,7 +76,7 @@ func (c *ConnectionManager) consume(msgs <-chan *events.Envelope) {
 		if delta == 0 {
 			continue
 		}
-		delay := c.conf.MinDelay.Duration + time.Duration(rand.Intn(delta))
+		delay := c.conf.ReceiveDelay.Min + time.Duration(rand.Intn(delta))
 		time.Sleep(delay)
 	}
 }

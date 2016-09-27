@@ -7,10 +7,6 @@ dependencies:
 files:
 - github.com/bradylove/envstruct/*.go # gosub
 - github.com/cloudfoundry-incubator/uaago/*.go # gosub
-- github.com/cloudfoundry/noaa/*.go # gosub
-- github.com/cloudfoundry/noaa/consumer/*.go # gosub
-- github.com/cloudfoundry/noaa/consumer/internal/*.go # gosub
-- github.com/cloudfoundry/noaa/errors/*.go # gosub
 - github.com/cloudfoundry/sonde-go/events/*.go # gosub
 - github.com/gogo/protobuf/gogoproto/*.go # gosub
 - github.com/gogo/protobuf/proto/*.go # gosub

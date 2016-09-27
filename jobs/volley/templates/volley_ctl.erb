@@ -1,5 +1,11 @@
 #!/bin/bash -e
 
+<%
+tc_addrs = p("volley.tc_addresses").map do |addr|
+	"ws://#{addr}:8081"
+end
+%>
+
 RUN_DIR=/var/vcap/sys/run/volley
 LOG_DIR=/var/vcap/sys/log/volley
 PIDFILE=$RUN_DIR/volley.pid
@@ -25,8 +31,15 @@ case $1 in
 
     chown -R vcap:vcap $LOG_DIR
 
-    chpst -u vcap:vcap /var/vcap/packages/volley/bin/volley  \
-         --config /var/vcap/jobs/volley/config/volley.json &
+	export TC_ADDRS="<%= tc_addrs.join(",") %>"
+	export AUTH_TOKEN="<%= p("volley.auth_token") %>"
+	export FIREHOSE_COUNT="<%= p("volley.firehose_count") %>"
+	export STREAM_COUNT="<%= p("volley.stream_count") %>"
+	export SUB_ID="<%= p("volley.subscription_id") %>"
+	export RECV_DELAY="<%= p("volley.receive_delay") %>"
+	export KILL_DELAY="<%= p("volley.kill_delay") %>"
+
+    chpst -u vcap:vcap /var/vcap/packages/volley/bin/volley &
 
     echo $! > $PIDFILE
 

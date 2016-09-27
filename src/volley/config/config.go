@@ -1,62 +1,46 @@
 package config
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
-	"io"
-	"os"
+	"fmt"
+	"strings"
 	"time"
+
+	"github.com/bradylove/envstruct"
 )
 
-type Duration struct {
-	time.Duration
+type DurationRange struct {
+	Min, Max time.Duration
 }
 
-func (d *Duration) UnmarshalJSON(v []byte) error {
-	s := string(bytes.Trim(v, `"`))
+func (d *DurationRange) UnmarshalEnv(v string) error {
+	values := strings.Split(v, "-")
+	if len(values) != 2 {
+		return fmt.Errorf("Expected DurationRange to be of format {min}-{max}")
+	}
 	var err error
-	d.Duration, err = time.ParseDuration(s)
-	return err
+	d.Min, err = time.ParseDuration(values[0])
+	if err != nil {
+		return fmt.Errorf("Error parsing DurationRange.Min: %s", err)
+	}
+	d.Max, err = time.ParseDuration(values[1])
+	if err != nil {
+		return fmt.Errorf("Error parsing DurationRange.Max: %s", err)
+	}
+	return nil
 }
 
 type Config struct {
-	TCAddresses    []string
-	AuthToken      string
-	FirehoseCount  int
-	StreamCount    int
-	SubscriptionID string
-	MinDelay       Duration
-	MaxDelay       Duration
+	TCAddresses    []string      `env:"tc_addrs,required"`
+	AuthToken      string        `env:"auth_token"`
+	FirehoseCount  int           `env:"firehose_count"`
+	StreamCount    int           `env:"stream_count"`
+	SubscriptionID string        `env:"sub_id"`
+	ReceiveDelay   DurationRange `env:"recv_delay"`
+	KillDelay      DurationRange `env:"kill_delay"`
 }
 
-func ParseFile(configFile string) (*Config, error) {
-	file, err := os.Open(configFile)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	return Parse(file)
-}
-
-func Parse(reader io.Reader) (*Config, error) {
-	config := &Config{}
-	err := json.NewDecoder(reader).Decode(config)
-	if err != nil {
-		return nil, err
-	}
-	if len(config.TCAddresses) == 0 {
-		return nil, errors.New("At least one TrafficController URL is required")
-	}
-
-	if config.SubscriptionID == "" {
-		config.SubscriptionID = "default"
-	}
-
-	if os.Getenv("AUTHTOKEN") != "" {
-		config.AuthToken = os.Getenv("AUTHTOKEN")
-	}
-
-	return config, nil
+func Load() (Config, error) {
+	var c Config
+	err := envstruct.Load(&c)
+	return c, err
 }

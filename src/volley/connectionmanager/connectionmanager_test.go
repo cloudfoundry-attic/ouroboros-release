@@ -29,7 +29,7 @@ var _ = Describe("Connection", func() {
 			server := httptest.NewServer(handler)
 			defer server.Close()
 
-			conf := &config.Config{
+			conf := config.Config{
 				TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
 				SubscriptionID: "some-sub-id",
 			}
@@ -47,11 +47,13 @@ var _ = Describe("Connection", func() {
 			server := httptest.NewServer(handler)
 			defer server.Close()
 
-			conf := &config.Config{
+			conf := config.Config{
 				TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
 				SubscriptionID: "some-sub-id",
-				MinDelay:       config.Duration{99 * time.Millisecond},
-				MaxDelay:       config.Duration{100 * time.Millisecond},
+				ReceiveDelay: config.DurationRange{
+					Min: 99 * time.Millisecond,
+					Max: 100 * time.Millisecond,
+				},
 			}
 			mockAppIDStore := newMockAppIDStore()
 			conn := connectionmanager.New(conf, mockAppIDStore)
@@ -71,7 +73,7 @@ var _ = Describe("Connection", func() {
 			server := httptest.NewServer(handler)
 			defer server.Close()
 
-			conf := &config.Config{
+			conf := config.Config{
 				TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
 				SubscriptionID: "some-sub-id",
 			}
@@ -147,7 +149,7 @@ var _ = Describe("Connection", func() {
 			server := httptest.NewServer(handler)
 			defer server.Close()
 
-			conf := &config.Config{
+			conf := config.Config{
 				TCAddresses: []string{strings.Replace(server.URL, "http", "ws", 1)},
 			}
 			mockAppIDStore := newMockAppIDStore()
@@ -165,11 +167,13 @@ var _ = Describe("Connection", func() {
 			server := httptest.NewServer(handler)
 			defer server.Close()
 
-			conf := &config.Config{
+			conf := config.Config{
 				TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
 				SubscriptionID: "some-sub-id",
-				MinDelay:       config.Duration{99 * time.Millisecond},
-				MaxDelay:       config.Duration{100 * time.Millisecond},
+				ReceiveDelay: config.DurationRange{
+					Min: 99 * time.Millisecond,
+					Max: 100 * time.Millisecond,
+				},
 			}
 			mockAppIDStore := newMockAppIDStore()
 			mockAppIDStore.GetOutput.Ret0 <- "some-app-id"
