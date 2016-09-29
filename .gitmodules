@@ -37,3 +37,6 @@
 [submodule "src/github.com/apoydence/eachers"]
 	path = src/github.com/apoydence/eachers
 	url = https://github.com/apoydence/eachers
+[submodule "src/code.cloudfoundry.org/localip"]
+	path = src/code.cloudfoundry.org/localip
+	url = https://github.com/cloudfoundry/localip

@@ -1,6 +1,7 @@
 package connectionmanager_test
 
 import (
+	"conf"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -50,7 +51,7 @@ var _ = Describe("Connection", func() {
 			conf := config.Config{
 				TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
 				SubscriptionID: "some-sub-id",
-				ReceiveDelay: config.DurationRange{
+				ReceiveDelay: conf.DurationRange{
 					Min: 99 * time.Millisecond,
 					Max: 100 * time.Millisecond,
 				},
@@ -170,7 +171,7 @@ var _ = Describe("Connection", func() {
 			conf := config.Config{
 				TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
 				SubscriptionID: "some-sub-id",
-				ReceiveDelay: config.DurationRange{
+				ReceiveDelay: conf.DurationRange{
 					Min: 99 * time.Millisecond,
 					Max: 100 * time.Millisecond,
 				},
