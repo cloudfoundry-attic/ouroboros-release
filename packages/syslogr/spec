@@ -1,0 +1,18 @@
+---
+name: syslogr
+
+dependencies:
+
+files:
+- conf/*.go # gosub
+- github.com/bradylove/envstruct/*.go # gosub
+- github.com/cloudfoundry/dropsonde/emitter/*.go # gosub
+- github.com/cloudfoundry/dropsonde/metric_sender/*.go # gosub
+- github.com/cloudfoundry/dropsonde/metricbatcher/*.go # gosub
+- github.com/cloudfoundry/sonde-go/events/*.go # gosub
+- github.com/gogo/protobuf/gogoproto/*.go # gosub
+- github.com/gogo/protobuf/proto/*.go # gosub
+- github.com/gogo/protobuf/protoc-gen-gogo/descriptor/*.go # gosub
+- syslogr/*.go # gosub
+- syslogr/conns/*.go # gosub
+- syslogr/ranger/*.go # gosub

@@ -1,0 +1,45 @@
+#!/bin/bash -e
+
+RUN_DIR=/var/vcap/sys/run/syslogr
+LOG_DIR=/var/vcap/sys/log/syslogr
+LOG_BASENAME="$(basename "$0")"
+PIDFILE=$RUN_DIR/syslogr.pid
+
+mkdir -p $RUN_DIR
+mkdir -p $LOG_DIR
+chown -R vcap:vcap $LOG_DIR
+
+function prepend_datetime() {
+  awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }'
+}
+exec > >(prepend_datetime >> "${LOG_DIR}/${LOG_BASENAME}.log")
+exec 2> >(prepend_datetime >> "${LOG_DIR}/${LOG_BASENAME}.err.log")
+
+case $1 in
+
+  start)
+    exec >>$LOG_DIR/syslogr.stdout.log \
+        2>>$LOG_DIR/syslogr.stderr.log
+
+    export PORT='<%= p("syslogr.port") %>'
+    export DELAY='<%= p("syslogr.delay") %>'
+    export METRON_PORT='<%= p("metron.listening_port") %>'
+
+    chpst -u vcap:vcap /var/vcap/packages/syslogr/bin/syslogr &
+
+    echo $! > $PIDFILE
+
+    ;;
+
+  stop)
+    kill -9 `cat $PIDFILE`
+    rm -f $PIDFILE
+
+    ;;
+
+  *)
+    echo "Usage: $0 {start|stop}"
+
+    ;;
+
+esac

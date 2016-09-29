@@ -6,6 +6,7 @@ dependencies:
 
 files:
 - github.com/bradylove/envstruct/*.go
+- conf/*.go # gosub
 - github.com/bradylove/envstruct/*.go # gosub
 - github.com/cloudfoundry/dropsonde/envelope_extensions/*.go # gosub
 - github.com/cloudfoundry/noaa/*.go # gosub

@@ -33,6 +33,7 @@ function sync_package() {
 
 sync_package ouroboros -app ouroboros/... &
 sync_package volley -app volley/... &
+sync_package syslogr -app syslogr/... &
 
 wait
 

@@ -1,0 +1,5 @@
+check process syslogr
+  with pidfile /var/vcap/sys/run/syslogr/syslogr.pid
+  start program "/var/vcap/jobs/syslogr/bin/syslogr-ctl start"
+  stop program "/var/vcap/jobs/syslogr/bin/syslogr-ctl stop"
+  group vcap
