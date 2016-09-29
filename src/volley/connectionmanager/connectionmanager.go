@@ -49,7 +49,7 @@ func (c *ConnectionManager) pick() *consumer.Consumer {
 
 func (c *ConnectionManager) Firehose() {
 	consumer := c.pick()
-	msgs, errs := consumer.FirehoseWithoutReconnect(c.conf.SubscriptionID, c.conf.AuthToken)
+	msgs, errs := consumer.Firehose(c.conf.SubscriptionID, c.conf.AuthToken)
 	go c.consume(msgs)
 	for err := range errs {
 		log.Printf("Error from %s: %v\n", c.conf.SubscriptionID, err.Error())
@@ -59,7 +59,7 @@ func (c *ConnectionManager) Firehose() {
 func (c *ConnectionManager) Stream() {
 	consumer := c.pick()
 	appID := c.appStore.Get()
-	msgs, errs := consumer.StreamWithoutReconnect(appID, c.conf.AuthToken)
+	msgs, errs := consumer.Stream(appID, c.conf.AuthToken)
 	go c.consume(msgs)
 	for err := range errs {
 		log.Printf("Error from %s: %v\n", appID, err.Error())
