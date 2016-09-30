@@ -7,12 +7,23 @@ packages:
 - loggregator_common
 - volley
 
+consumes:
+- name: syslogr
+  type: syslogr
+  properties:
+    syslogr.port
+
 properties:
   volley.firehose_count:
     description: "Number of Firehose connections to open"
     default: 10
   volley.stream_count:
     description: "Number of Stream connections to open. AppID must be set"
+  volley.syslog_drains:
+    description: "Number of syslog drains to advertise in etcd"
+    default: 0
+  etcd.machines:
+    description: "The addresses of etcd's nodes"
   volley.tc_addresses:
     description: "IPs of the TrafficControllers to connect to"
   volley.auth_token:

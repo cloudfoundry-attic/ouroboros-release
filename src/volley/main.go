@@ -1,6 +1,7 @@
 package main
 
 import (
+	"conf"
 	"log"
 	"math/rand"
 	"os"
@@ -8,8 +9,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/coreos/etcd/client"
+
 	"volley/config"
 	"volley/connectionmanager"
+	"volley/drains"
 )
 
 func main() {
@@ -28,6 +32,20 @@ func main() {
 		go conn.Stream()
 	}
 
+	if len(config.ETCDAddresses) > 0 {
+		cfg := client.Config{
+			Endpoints: config.ETCDAddresses,
+		}
+		c, err := client.New(cfg)
+		if err != nil {
+			panic(err)
+		}
+		api := client.NewKeysAPI(c)
+		for i := 0; i < config.SyslogDrains; i++ {
+			drains.AdvertiseRandom(idStore, api, config.SyslogAddresses)
+		}
+	}
+
 	go killAfterRandomDelay(config.KillDelay)
 
 	terminate := make(chan os.Signal, 1)
@@ -37,7 +55,7 @@ func main() {
 	conn.Close()
 }
 
-func killAfterRandomDelay(delayRange config.DurationRange) {
+func killAfterRandomDelay(delayRange conf.DurationRange) {
 	delta := int(delayRange.Max - delayRange.Min)
 	killDelay := delayRange.Min + time.Duration(rand.Intn(delta))
 	killAfter := time.After(killDelay)

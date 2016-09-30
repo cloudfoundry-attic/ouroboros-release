@@ -4,6 +4,15 @@
 tc_addrs = p("volley.tc_addresses").map do |addr|
 	"ws://#{addr}:8081"
 end
+
+etcd_addrs = p("etcd.machines").map do |addr|
+    "http://#{addr}:4001"
+end
+
+syslogr = link("syslogr")
+syslog_addrs = syslogr.instances.map do |instance|
+    "#{instance.address}:#{syslogr.p("syslogr.port")}"
+end
 %>
 
 RUN_DIR=/var/vcap/sys/run/volley
@@ -31,13 +40,16 @@ case $1 in
 
     chown -R vcap:vcap $LOG_DIR
 
-	export TC_ADDRS="<%= tc_addrs.join(",") %>"
-	export AUTH_TOKEN="<%= p("volley.auth_token") %>"
-	export FIREHOSE_COUNT="<%= p("volley.firehose_count") %>"
-	export STREAM_COUNT="<%= p("volley.stream_count") %>"
-	export SUB_ID="<%= p("volley.subscription_id") %>"
-	export RECV_DELAY="<%= p("volley.receive_delay") %>"
-	export KILL_DELAY="<%= p("volley.kill_delay") %>"
+    export TC_ADDRS="<%= tc_addrs.join(",") %>"
+    export AUTH_TOKEN="<%= p("volley.auth_token") %>"
+    export FIREHOSE_COUNT="<%= p("volley.firehose_count") %>"
+    export STREAM_COUNT="<%= p("volley.stream_count") %>"
+    export SUB_ID="<%= p("volley.subscription_id") %>"
+    export RECV_DELAY="<%= p("volley.receive_delay") %>"
+    export KILL_DELAY="<%= p("volley.kill_delay") %>"
+    export ETCD_ADDRS="<%= etcd_addrs.join(",") %>"
+    export SYSLOG_ADDRS="<%= syslog_addrs.join(",") %>"
+    export SYSLOG_DRAINS="<%= p("volley.syslog_drains") %>"
 
     chpst -u vcap:vcap /var/vcap/packages/volley/bin/volley &
 

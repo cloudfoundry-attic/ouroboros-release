@@ -23,7 +23,7 @@ case $1 in
 
     export PORT='<%= p("syslogr.port") %>'
     export DELAY='<%= p("syslogr.delay") %>'
-    export METRON_PORT='<%= p("metron.listening_port") %>'
+    export METRON_PORT='<%= p("metron_agent.listening_port") %>'
 
     chpst -u vcap:vcap /var/vcap/packages/syslogr/bin/syslogr &
 

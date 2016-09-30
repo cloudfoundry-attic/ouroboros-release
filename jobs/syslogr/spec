@@ -6,6 +6,12 @@ templates:
 packages:
 - syslogr
 
+provides:
+- name: syslogr
+  type: syslogr
+  properties:
+  - syslogr.port
+
 properties:
   syslogr.port:
     description: "Port to Start the Syslog Server Listener on"
@@ -13,5 +19,5 @@ properties:
     description: "Range of durations to delay each time a message is received"
     default: "1ms-100ms"
 
-  metron.listening_port:
+  metron_agent.listening_port:
     description: "Metron Listening Port"

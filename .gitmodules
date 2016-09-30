@@ -40,3 +40,12 @@
 [submodule "src/code.cloudfoundry.org/localip"]
 	path = src/code.cloudfoundry.org/localip
 	url = https://github.com/cloudfoundry/localip
+[submodule "src/github.com/coreos/etcd"]
+	path = src/github.com/coreos/etcd
+	url = https://github.com/coreos/etcd
+[submodule "src/github.com/ugorji/go"]
+	path = src/github.com/ugorji/go
+	url = https://github.com/ugorji/go
+[submodule "src/golang.org/x/net"]
+	path = src/golang.org/x/net
+	url = https://go.googlesource.com/net

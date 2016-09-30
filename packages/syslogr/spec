@@ -2,6 +2,7 @@
 name: syslogr
 
 dependencies:
+- golang1.7
 
 files:
 - conf/*.go # gosub
