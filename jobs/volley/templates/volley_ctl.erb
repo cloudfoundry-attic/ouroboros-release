@@ -50,6 +50,8 @@ case $1 in
     export ETCD_ADDRS="<%= etcd_addrs.join(",") %>"
     export SYSLOG_ADDRS="<%= syslog_addrs.join(",") %>"
     export SYSLOG_DRAINS="<%= p("volley.syslog_drains") %>"
+    export METRON_PORT="<%= p("volley.metron_port") %>"
+    export METRIC_BATCH_INTERVAL="<%= p("volley.metric_batch_interval") %>"
 
     chpst -u vcap:vcap /var/vcap/packages/volley/bin/volley &
 

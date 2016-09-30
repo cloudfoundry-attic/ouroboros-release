@@ -38,3 +38,9 @@ properties:
   volley.kill_delay:
     description: "Range of durations to delay before killing the process with SIGKILL"
     default: "1m-1h"
+  volley.metron_port:
+    description: "The port of the local metron agent"
+    default: "3457"
+  volley.metric_batch_interval:
+    description: "The interval for metric batching"
+    default: "5s"
