@@ -49,6 +49,7 @@ var _ = Describe("Volley", func() {
 		cmd.Env = []string{
 			"TC_ADDRS=" + server.URL,
 			"KILL_DELAY=100ms-150ms",
+			"METRON_PORT=3457",
 		}
 
 		Expect(cmd.Start()).To(Succeed())
@@ -79,6 +80,7 @@ var _ = Describe("Volley", func() {
 		cmd.Env = []string{
 			"TC_ADDRS=" + strings.Replace(server.URL, "http", "ws", 1),
 			"KILL_DELAY=10s-20s",
+			"METRON_PORT=3457",
 			"ETCD_ADDRS=" + etcdserver.URL,
 			"FIREHOSE_COUNT=1",
 			"STREAM_COUNT=1",

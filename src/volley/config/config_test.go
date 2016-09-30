@@ -12,14 +12,26 @@ import (
 var _ = Describe("Config", func() {
 	Describe("Load", func() {
 		It("returns an error if TC_ADDRS is empty", func() {
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
 			_, err := config.Load()
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("TC_ADDRS is required but was empty"))
 		})
 
+		It("returns an error if METRON_PORT is empty", func() {
+			os.Setenv("TC_ADDRS", "foo,bar")
+			defer os.Unsetenv("TC_ADDRS")
+			_, err := config.Load()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("METRON_PORT is required but was empty"))
+		})
+
 		It("returns an error if RECV_DELAY isn't a range", func() {
 			os.Setenv("TC_ADDRS", "foo,bar")
 			defer os.Unsetenv("TC_ADDRS")
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
 			os.Setenv("RECV_DELAY", "1us")
 			defer os.Unsetenv("RECV_DELAY")
 
@@ -31,6 +43,8 @@ var _ = Describe("Config", func() {
 		It("returns an error if RECV_DELAY.Min can't be parsed", func() {
 			os.Setenv("TC_ADDRS", "foo,bar")
 			defer os.Unsetenv("TC_ADDRS")
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
 			os.Setenv("RECV_DELAY", "foo-1us")
 			defer os.Unsetenv("RECV_DELAY")
 
@@ -42,6 +56,8 @@ var _ = Describe("Config", func() {
 		It("returns an error if RECV_DELAY.Max can't be parsed", func() {
 			os.Setenv("TC_ADDRS", "foo,bar")
 			defer os.Unsetenv("TC_ADDRS")
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
 			os.Setenv("RECV_DELAY", "1us-foo")
 			defer os.Unsetenv("RECV_DELAY")
 
@@ -53,6 +69,8 @@ var _ = Describe("Config", func() {
 		It("returns an error if KILL_DELAY isn't a range", func() {
 			os.Setenv("TC_ADDRS", "foo,bar")
 			defer os.Unsetenv("TC_ADDRS")
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
 			os.Setenv("KILL_DELAY", "1us")
 			defer os.Unsetenv("KILL_DELAY")
 
@@ -64,6 +82,8 @@ var _ = Describe("Config", func() {
 		It("returns an error if KILL_DELAY.Min can't be parsed", func() {
 			os.Setenv("TC_ADDRS", "foo,bar")
 			defer os.Unsetenv("TC_ADDRS")
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
 			os.Setenv("KILL_DELAY", "foo-1us")
 			defer os.Unsetenv("KILL_DELAY")
 
@@ -75,6 +95,8 @@ var _ = Describe("Config", func() {
 		It("returns an error if KILL_DELAY.Max can't be parsed", func() {
 			os.Setenv("TC_ADDRS", "foo,bar")
 			defer os.Unsetenv("TC_ADDRS")
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
 			os.Setenv("KILL_DELAY", "1us-foo")
 			defer os.Unsetenv("KILL_DELAY")
 
@@ -98,6 +120,10 @@ var _ = Describe("Config", func() {
 			defer os.Unsetenv("RECV_DELAY")
 			os.Setenv("KILL_DELAY", "10us-100ms")
 			defer os.Unsetenv("KILL_DELAY")
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
+			os.Setenv("METRIC_BATCH_INTERVAL", "100ms")
+			defer os.Unsetenv("METRIC_BATCH_INTERVAL")
 
 			c, err := config.Load()
 			Expect(err).ToNot(HaveOccurred())
@@ -110,6 +136,8 @@ var _ = Describe("Config", func() {
 			Expect(c.ReceiveDelay.Max).To(Equal(10 * time.Millisecond))
 			Expect(c.KillDelay.Min).To(Equal(10 * time.Microsecond))
 			Expect(c.KillDelay.Max).To(Equal(100 * time.Millisecond))
+			Expect(c.MetronPort).To(Equal(12345))
+			Expect(c.MetricBatchInterval).To(Equal(100 * time.Millisecond))
 		})
 	})
 })

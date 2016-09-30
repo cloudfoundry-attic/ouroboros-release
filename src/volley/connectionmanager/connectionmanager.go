@@ -9,8 +9,14 @@ import (
 	"volley/config"
 
 	"github.com/cloudfoundry/dropsonde/envelope_extensions"
+	"github.com/cloudfoundry/dropsonde/metricbatcher"
 	"github.com/cloudfoundry/noaa/consumer"
 	"github.com/cloudfoundry/sonde-go/events"
+)
+
+var (
+	openConnectionsMetric   = "openConnections"
+	closedConnectionsMetric = "closedConnections"
 )
 
 type AppIDStore interface {
@@ -18,14 +24,19 @@ type AppIDStore interface {
 	Get() string
 }
 
+type Batcher interface {
+	BatchCounter(name string) metricbatcher.BatchCounterChainer
+}
+
 type ConnectionManager struct {
 	consumers    []*consumer.Consumer
 	consumerLock sync.Mutex
 	conf         config.Config
 	appStore     AppIDStore
+	batcher      Batcher
 }
 
-func New(conf config.Config, appStore AppIDStore) *ConnectionManager {
+func New(conf config.Config, appStore AppIDStore, batcher Batcher) *ConnectionManager {
 	var consumers []*consumer.Consumer
 	for _, tcAddress := range conf.TCAddresses {
 		c := consumer.New(tcAddress, &tls.Config{InsecureSkipVerify: true}, nil)
@@ -36,6 +47,7 @@ func New(conf config.Config, appStore AppIDStore) *ConnectionManager {
 		conf:      conf,
 		consumers: consumers,
 		appStore:  appStore,
+		batcher:   batcher,
 	}
 }
 
@@ -50,8 +62,10 @@ func (c *ConnectionManager) pick() *consumer.Consumer {
 func (c *ConnectionManager) Firehose() {
 	consumer := c.pick()
 	msgs, errs := consumer.Firehose(c.conf.SubscriptionID, c.conf.AuthToken)
-	go c.consume(msgs)
+	c.batcher.BatchCounter("volley.openConnections").SetTag("conn_type", "firehose").Increment()
+	go c.consume(msgs, "firehose")
 	for err := range errs {
+		c.batcher.BatchCounter("volley.closedConnections").SetTag("conn_type", "firehose").Increment()
 		log.Printf("Error from %s: %v\n", c.conf.SubscriptionID, err.Error())
 	}
 }
@@ -60,15 +74,22 @@ func (c *ConnectionManager) Stream() {
 	consumer := c.pick()
 	appID := c.appStore.Get()
 	msgs, errs := consumer.Stream(appID, c.conf.AuthToken)
-	go c.consume(msgs)
+	c.batcher.BatchCounter("volley.openConnections").SetTag("conn_type", "stream").Increment()
+	go c.consume(msgs, "stream")
 	for err := range errs {
+		c.batcher.BatchCounter("volley.closedConnections").SetTag("conn_type", "stream").Increment()
 		log.Printf("Error from %s: %v\n", appID, err.Error())
 	}
 }
 
-func (c *ConnectionManager) consume(msgs <-chan *events.Envelope) {
+func (c *ConnectionManager) consume(msgs <-chan *events.Envelope, connType string) {
 	delta := int(c.conf.ReceiveDelay.Max - c.conf.ReceiveDelay.Min)
+	var count int
 	for msg := range msgs {
+		count++
+		if count%1000 == 0 {
+			c.batcher.BatchCounter("volley.receivedEnvelopes").SetTag("conn_type", connType).Add(1000)
+		}
 		appID := envelope_extensions.GetAppId(msg)
 		if appID != "" {
 			c.appStore.Add(appID)

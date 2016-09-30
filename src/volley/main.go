@@ -2,6 +2,7 @@ package main
 
 import (
 	"conf"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -9,6 +10,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cloudfoundry/dropsonde/emitter"
+	"github.com/cloudfoundry/dropsonde/metric_sender"
+	"github.com/cloudfoundry/dropsonde/metricbatcher"
+	"github.com/cloudfoundry/dropsonde/metrics"
 	"github.com/coreos/etcd/client"
 
 	"volley/config"
@@ -23,7 +28,18 @@ func main() {
 		panic(err)
 	}
 	idStore := connectionmanager.NewIDStore(config.StreamCount)
-	conn := connectionmanager.New(config, idStore)
+
+	udpEmitter, err := emitter.NewUdpEmitter(fmt.Sprintf("127.0.0.1:%d", config.MetronPort))
+	if err != nil {
+		panic(err)
+	}
+	eventEmitter := emitter.NewEventEmitter(udpEmitter, "volley")
+
+	metricSender := metric_sender.NewMetricSender(eventEmitter)
+	metricBatcher := metricbatcher.New(metricSender, config.MetricBatchInterval)
+	metrics.Initialize(metricSender, metricBatcher)
+
+	conn := connectionmanager.New(config, idStore, metricBatcher)
 
 	for i := 0; i < config.FirehoseCount; i++ {
 		go conn.Firehose()

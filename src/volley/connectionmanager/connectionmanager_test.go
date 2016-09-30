@@ -13,6 +13,7 @@ import (
 	"volley/connectionmanager"
 
 	. "github.com/apoydence/eachers"
+	"github.com/apoydence/eachers/testhelpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -23,45 +24,121 @@ import (
 )
 
 var _ = Describe("Connection", func() {
+	var (
+		cfg         config.Config
+		handler     *tcServer
+		server      *httptest.Server
+		mockBatcher *mockBatcher
+		mockChainer *mockBatchCounterChainer
+		mockIDStore *mockAppIDStore
+		conn        *connectionmanager.ConnectionManager
+	)
+
+	BeforeEach(func() {
+		handler = newTCServer()
+		server = httptest.NewServer(handler)
+
+		cfg = config.Config{
+			TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
+			SubscriptionID: "some-sub-id",
+		}
+
+		mockIDStore = newMockAppIDStore()
+		mockIDStore.GetOutput.Ret0 <- "some-app-id"
+		mockBatcher = newMockBatcher()
+		mockChainer = newMockBatchCounterChainer()
+		testhelpers.AlwaysReturn(mockBatcher.BatchCounterOutput, mockChainer)
+		testhelpers.AlwaysReturn(mockChainer.SetTagOutput, mockChainer)
+
+		conn = connectionmanager.New(cfg, mockIDStore, mockBatcher)
+	})
+
+	AfterEach(func() {
+		select {
+		case <-handler.done:
+			server.Close()
+		default:
+			handler.stop()
+			server.Close()
+		}
+	})
+
 	Describe("Firehose", func() {
 		It("creates a connection to the firehose endpoint", func() {
-			handler := newTCServer()
-			defer handler.stop()
-			server := httptest.NewServer(handler)
-			defer server.Close()
-
-			conf := config.Config{
-				TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
-				SubscriptionID: "some-sub-id",
-			}
-			mockAppIDStore := newMockAppIDStore()
-			conn := connectionmanager.New(conf, mockAppIDStore)
 			go conn.Firehose()
 
-			Eventually(handler.firehoseSubs).Should(Receive(Equal(conf.SubscriptionID)))
+			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
 			Consistently(handler.errs).ShouldNot(Receive())
 		})
 
-		It("is a slow consumer when delay is set", func() {
-			handler := newTCServer()
-			defer handler.stop()
-			server := httptest.NewServer(handler)
-			defer server.Close()
-
-			conf := config.Config{
-				TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
-				SubscriptionID: "some-sub-id",
-				ReceiveDelay: conf.DurationRange{
-					Min: 99 * time.Millisecond,
-					Max: 100 * time.Millisecond,
-				},
-			}
-			mockAppIDStore := newMockAppIDStore()
-			conn := connectionmanager.New(conf, mockAppIDStore)
+		It("increments an openConnections metric when a new connection is made", func() {
 			go conn.Firehose()
 
-			Eventually(handler.firehoseSubs).Should(Receive(Equal(conf.SubscriptionID)))
-			go handler.sendLoop()
+			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.openConnections")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "firehose")))
+			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
+		})
+
+		It("increments a closedConnections metric when an error occurs", func() {
+			go conn.Firehose()
+
+			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.openConnections")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "firehose")))
+			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
+
+			handler.stop()
+			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.closedConnections")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "firehose")))
+			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
+		})
+
+		It("increments a receivedEnvelopes metric when new envelopes are received", func() {
+			go conn.Firehose()
+
+			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+
+			done := make(chan struct{})
+			defer close(done)
+			go func(mockIDStore *mockAppIDStore, done chan struct{}) {
+				for {
+					select {
+					case <-done:
+						return
+					default:
+						<-mockIDStore.AddInput.AppID
+						<-mockIDStore.AddCalled
+					}
+				}
+			}(mockIDStore, done)
+			go handler.sendLoop(2000)
+
+			// Drain volley.openConnections
+			<-mockBatcher.BatchCounterInput.Name
+			<-mockChainer.SetTagInput.Key
+			<-mockChainer.SetTagInput.Value
+
+			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.receivedEnvelopes")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "firehose")))
+			Eventually(mockChainer.AddInput).Should(BeCalled(With(uint64(1000))))
+
+			By("batching by 1000")
+			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.receivedEnvelopes")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "firehose")))
+			Eventually(mockChainer.AddInput).Should(BeCalled(With(uint64(1000))))
+		})
+
+		It("is a slow consumer when delay is set", func() {
+			cfg.ReceiveDelay = conf.DurationRange{
+				Min: 99 * time.Millisecond,
+				Max: 100 * time.Millisecond,
+			}
+
+			go conn.Firehose()
+
+			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+			go handler.sendLoop(100000)
 			var err error
 			Eventually(handler.errs).Should(Receive(&err))
 			Expect(err).To(HaveOccurred())
@@ -69,20 +146,9 @@ var _ = Describe("Connection", func() {
 		})
 
 		DescribeTable("app ID store event types", func(ev *events.Envelope, appID string) {
-			handler := newTCServer()
-			defer handler.stop()
-			server := httptest.NewServer(handler)
-			defer server.Close()
-
-			conf := config.Config{
-				TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
-				SubscriptionID: "some-sub-id",
-			}
-			mockAppIDStore := newMockAppIDStore()
-			conn := connectionmanager.New(conf, mockAppIDStore)
 			go conn.Firehose()
 
-			Eventually(handler.firehoseSubs).Should(Receive(Equal(conf.SubscriptionID)))
+			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
 
 			b, err := proto.Marshal(ev)
 			Expect(err).ToNot(HaveOccurred())
@@ -90,10 +156,10 @@ var _ = Describe("Connection", func() {
 			Expect(handler.ws.WriteMessage(websocket.BinaryMessage, b)).To(Succeed())
 
 			if appID == "" {
-				Consistently(mockAppIDStore.AddInput).ShouldNot(BeCalled())
+				Consistently(mockIDStore.AddInput).ShouldNot(BeCalled())
 				return
 			}
-			Eventually(mockAppIDStore.AddInput).Should(BeCalled(With(appID)))
+			Eventually(mockIDStore.AddInput).Should(BeCalled(With(appID)))
 		},
 			Entry("LogMessage", &events.Envelope{
 				Origin:    proto.String("foo"),
@@ -145,44 +211,81 @@ var _ = Describe("Connection", func() {
 
 	Describe("Stream", func() {
 		It("creates a connection to the stream endpoint", func() {
-			handler := newTCServer()
-			defer handler.stop()
-			server := httptest.NewServer(handler)
-			defer server.Close()
-
-			conf := config.Config{
-				TCAddresses: []string{strings.Replace(server.URL, "http", "ws", 1)},
-			}
-			mockAppIDStore := newMockAppIDStore()
-			mockAppIDStore.GetOutput.Ret0 <- "some-app-id"
-			conn := connectionmanager.New(conf, mockAppIDStore)
 			go conn.Stream()
 
 			Eventually(handler.streamApps).Should(Receive())
 			Consistently(handler.errs).ShouldNot(Receive())
 		})
 
-		It("is a slow consumer when delay is set", func() {
-			handler := newTCServer()
-			defer handler.stop()
-			server := httptest.NewServer(handler)
-			defer server.Close()
-
-			conf := config.Config{
-				TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
-				SubscriptionID: "some-sub-id",
-				ReceiveDelay: conf.DurationRange{
-					Min: 99 * time.Millisecond,
-					Max: 100 * time.Millisecond,
-				},
-			}
-			mockAppIDStore := newMockAppIDStore()
-			mockAppIDStore.GetOutput.Ret0 <- "some-app-id"
-			conn := connectionmanager.New(conf, mockAppIDStore)
+		It("increments an openConnections metric when a new connection is made", func() {
 			go conn.Stream()
 
 			Eventually(handler.streamApps).Should(Receive())
-			go handler.sendLoop()
+			Consistently(handler.errs).ShouldNot(Receive())
+			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.openConnections")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "stream")))
+			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
+		})
+
+		It("increments a closedConnections metric when an error occurs", func() {
+			go conn.Stream()
+
+			Eventually(handler.streamApps).Should(Receive())
+			Consistently(handler.errs).ShouldNot(Receive())
+			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.openConnections")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "stream")))
+			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
+
+			handler.stop()
+			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.closedConnections")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "stream")))
+			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
+		})
+
+		It("increments a receivedEnvelopes metric when new envelopes are received", func() {
+			go conn.Stream()
+
+			Eventually(handler.streamApps).Should(Receive())
+
+			done := make(chan struct{})
+			defer close(done)
+			go func(mockIDStore *mockAppIDStore, done chan struct{}) {
+				for {
+					select {
+					case <-done:
+						return
+					default:
+						<-mockIDStore.AddInput.AppID
+						<-mockIDStore.AddCalled
+					}
+				}
+			}(mockIDStore, done)
+			go handler.sendLoop(2000)
+
+			// Drain volley.openConnections
+			<-mockBatcher.BatchCounterInput.Name
+			<-mockChainer.SetTagInput.Key
+			<-mockChainer.SetTagInput.Value
+
+			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.receivedEnvelopes")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "stream")))
+			Eventually(mockChainer.AddInput).Should(BeCalled(With(uint64(1000))))
+
+			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.receivedEnvelopes")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "stream")))
+			Eventually(mockChainer.AddInput).Should(BeCalled(With(uint64(1000))))
+		})
+
+		It("is a slow consumer when delay is set", func() {
+			cfg.ReceiveDelay = conf.DurationRange{
+				Min: 99 * time.Millisecond,
+				Max: 100 * time.Millisecond,
+			}
+
+			go conn.Stream()
+
+			Eventually(handler.streamApps).Should(Receive())
+			go handler.sendLoop(100000)
 			Eventually(handler.errs).Should(Receive())
 		})
 	})
@@ -211,7 +314,7 @@ func (tc *tcServer) stop() {
 	close(tc.done)
 }
 
-func (tc *tcServer) sendLoop() {
+func (tc *tcServer) sendLoop(sendCount int) {
 	msg := &events.Envelope{
 		Origin:    proto.String("foo"),
 		EventType: events.Envelope_CounterEvent.Enum(),
@@ -223,7 +326,7 @@ func (tc *tcServer) sendLoop() {
 	}
 	b, err := proto.Marshal(msg)
 	Expect(err).ToNot(HaveOccurred())
-	for {
+	for i := 0; i < sendCount; i++ {
 		Expect(tc.ws.SetWriteDeadline(time.Now().Add(10 * time.Millisecond))).To(Succeed())
 		err := tc.ws.WriteMessage(websocket.BinaryMessage, b)
 		if err != nil {
