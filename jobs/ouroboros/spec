@@ -12,6 +12,7 @@ properties:
 
   metron_agent.listening_port:
     description: "Metron Listening Port"
+    default: "3457"
 
   uaa.url:
     description: "URL for the UAA server"

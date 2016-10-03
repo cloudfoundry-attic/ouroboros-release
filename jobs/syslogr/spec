@@ -21,3 +21,4 @@ properties:
 
   metron_agent.listening_port:
     description: "Metron Listening Port"
+    default: "3457"

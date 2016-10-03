@@ -10,8 +10,13 @@ packages:
 consumes:
 - name: syslogr
   type: syslogr
+  optional: true
   properties:
     syslogr.port
+- name: trafficcontroller
+  type: trafficcontroller
+  properties:
+  - loggregator.outgoing_dropsonde_port
 
 properties:
   volley.firehose_count:
@@ -22,10 +27,6 @@ properties:
   volley.syslog_drains:
     description: "Number of syslog drains to advertise in etcd"
     default: 0
-  etcd.machines:
-    description: "The addresses of etcd's nodes"
-  volley.tc_addresses:
-    description: "IPs of the TrafficControllers to connect to"
   volley.auth_token:
     description: "AuthToken used to confirm access to logs"
     default: ""
@@ -38,9 +39,13 @@ properties:
   volley.kill_delay:
     description: "Range of durations to delay before killing the process with SIGKILL"
     default: "1m-1h"
-  volley.metron_port:
-    description: "The port of the local metron agent"
-    default: "3457"
   volley.metric_batch_interval:
     description: "The interval for metric batching"
     default: "5s"
+
+  etcd.machines:
+    description: "The addresses of etcd's nodes"
+
+  metron_agent.listening_port:
+    description: "The port of the local metron agent"
+    default: "3457"
