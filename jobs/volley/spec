@@ -4,7 +4,7 @@ templates:
   volley_ctl.erb: bin/volley_ctl
 
 packages:
-- loggregator_common
+- common
 - volley
 
 consumes:
