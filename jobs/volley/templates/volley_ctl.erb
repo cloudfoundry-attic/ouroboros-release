@@ -13,7 +13,7 @@ end
 syslog_addrs = []
 if_link("syslogr") do |syslogr|
   syslog_addrs = syslogr.instances.map do |instance|
-      "#{instance.address}:#{syslogr.p("syslogr.port")}"
+      "syslog://#{instance.address}:#{syslogr.p("syslogr.port")}"
   end
 end
 %>

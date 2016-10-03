@@ -91,7 +91,7 @@ func (c *ConnectionManager) consume(msgs <-chan *events.Envelope, connType strin
 			c.batcher.BatchCounter("volley.receivedEnvelopes").SetTag("conn_type", connType).Add(1000)
 		}
 		appID := envelope_extensions.GetAppId(msg)
-		if appID != "" {
+		if appID != "" && appID != envelope_extensions.SystemAppId {
 			c.appStore.Add(appID)
 		}
 		if delta == 0 {

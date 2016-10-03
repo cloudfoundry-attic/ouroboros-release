@@ -18,6 +18,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/cloudfoundry/dropsonde/envelope_extensions"
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gorilla/websocket"
@@ -143,6 +144,30 @@ var _ = Describe("Connection", func() {
 			Eventually(handler.errs).Should(Receive(&err))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("i/o timeout"))
+		})
+
+		It("ignores system app IDs", func() {
+			go conn.Firehose()
+
+			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+
+			ev := &events.Envelope{
+				Origin:    proto.String("foo"),
+				EventType: events.Envelope_LogMessage.Enum(),
+				LogMessage: &events.LogMessage{
+					AppId:       proto.String(envelope_extensions.SystemAppId),
+					Message:     []byte("foo"),
+					MessageType: events.LogMessage_OUT.Enum(),
+					Timestamp:   proto.Int64(time.Now().UnixNano()),
+				},
+			}
+
+			b, err := proto.Marshal(ev)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(handler.ws.SetWriteDeadline(time.Now().Add(10 * time.Millisecond))).To(Succeed())
+			Expect(handler.ws.WriteMessage(websocket.BinaryMessage, b)).To(Succeed())
+
+			Consistently(mockIDStore.AddInput).ShouldNot(BeCalled())
 		})
 
 		DescribeTable("app ID store event types", func(ev *events.Envelope, appID string) {
