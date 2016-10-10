@@ -1,9 +1,8 @@
 #!/bin/bash -e
 
 <%
-tc = link("trafficcontroller")
-tc_addrs = tc.instances.map do |instance|
-  "ws://#{instance.address}:#{tc.p("loggregator.outgoing_dropsonde_port")}"
+tc_addrs = p("trafficcontroller.ips").map do |addr|
+  "ws://#{addr}:#{p("trafficcontroller.outgoing_dropsonde_port")}"
 end
 
 etcd_addrs = p("etcd.machines").map do |addr|

@@ -13,10 +13,6 @@ consumes:
   optional: true
   properties:
     syslogr.port
-- name: trafficcontroller
-  type: trafficcontroller
-  properties:
-  - loggregator.outgoing_dropsonde_port
 
 properties:
   volley.firehose_count:
@@ -42,6 +38,11 @@ properties:
   volley.metric_batch_interval:
     description: "The interval for metric batching"
     default: "5s"
+  trafficcontroller.ips:
+    description: "The traffic controller IPs"
+  trafficcontroller.outgoing_dropsonde_port:
+    description: "The port to connect to traffic controller"
+    default: 8081
 
   etcd.machines:
     description: "The addresses of etcd's nodes"
