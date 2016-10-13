@@ -366,16 +366,67 @@ var _ = Describe("Connection", func() {
 			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
 		})
 	})
+
+	Describe("Container Metrics", func() {
+		It("sends a request to the container metrics endpoint", func() {
+			go conn.ContainerMetrics()
+
+			Eventually(handler.containerMetricsReqs).Should(Receive())
+			Consistently(handler.errs).ShouldNot(Receive())
+		})
+
+		It("increments a connection metric for containerMetrics", func() {
+			env := &events.Envelope{
+				Origin:    proto.String("foo"),
+				EventType: events.Envelope_ContainerMetric.Enum(),
+				ContainerMetric: &events.ContainerMetric{
+					ApplicationId: proto.String("some-app"),
+					InstanceIndex: proto.Int32(1),
+					CpuPercentage: proto.Float64(0.1),
+					MemoryBytes:   proto.Uint64(1),
+					DiskBytes:     proto.Uint64(1),
+				},
+			}
+			b, err := proto.Marshal(env)
+			Expect(err).ToNot(HaveOccurred())
+			handler.setResponse(response{
+				data:       b,
+				statusCode: 200,
+			})
+
+			go conn.ContainerMetrics()
+			close(handler.done)
+
+			Eventually(handler.containerMetricsReqs).Should(Receive())
+			Consistently(handler.errs).ShouldNot(Receive())
+			Eventually(mockBatcher.BatchCounterInput, 2).Should(BeCalled(With("volley.numberOfRequests")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "containermetrics")))
+			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
+		})
+
+		It("increments an error metric if request errors out", func() {
+			handler.setResponse(response{data: nil, statusCode: 500})
+			go conn.ContainerMetrics()
+			close(handler.done)
+
+			Eventually(handler.containerMetricsReqs).Should(Receive())
+			Consistently(handler.errs).ShouldNot(Receive())
+			Eventually(mockBatcher.BatchCounterInput, 2).Should(BeCalled(With("volley.numberOfRequestErrors")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "containermetrics")))
+			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
+		})
+	})
 })
 
 type tcServer struct {
-	ws            *websocket.Conn
-	response      response
-	streamApps    chan string
-	firehoseSubs  chan string
-	recentLogReqs chan string
-	errs          chan error
-	done          chan struct{}
+	ws                   *websocket.Conn
+	response             response
+	streamApps           chan string
+	firehoseSubs         chan string
+	containerMetricsReqs chan string
+	recentLogReqs        chan string
+	errs                 chan error
+	done                 chan struct{}
 }
 
 type response struct {
@@ -385,11 +436,12 @@ type response struct {
 
 func newTCServer() *tcServer {
 	return &tcServer{
-		streamApps:    make(chan string, 100),
-		firehoseSubs:  make(chan string, 100),
-		recentLogReqs: make(chan string, 100),
-		errs:          make(chan error, 100),
-		done:          make(chan struct{}),
+		streamApps:           make(chan string, 100),
+		firehoseSubs:         make(chan string, 100),
+		recentLogReqs:        make(chan string, 100),
+		containerMetricsReqs: make(chan string, 100),
+		errs:                 make(chan error, 100),
+		done:                 make(chan struct{}),
 	}
 }
 
@@ -427,6 +479,24 @@ func (tc *tcServer) setResponse(resp response) {
 	tc.response = resp
 }
 
+func (tc *tcServer) createMultiPartResp(rw http.ResponseWriter) {
+	if tc.response.statusCode != http.StatusOK {
+		http.Error(rw, "bad request", tc.response.statusCode)
+		return
+	}
+
+	mp := multipart.NewWriter(rw)
+	defer mp.Close()
+
+	rw.Header().Set("Content-Type", `multipart/x-protobuf; boundary=`+mp.Boundary())
+
+	partWriter, err := mp.CreatePart(nil)
+	if err != nil {
+		tc.errs <- err
+	}
+	partWriter.Write(tc.response.data)
+}
+
 func (tc *tcServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer GinkgoRecover()
 	var err error
@@ -448,6 +518,11 @@ func (tc *tcServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		idEnd := idStart + strings.Index(r.URL.Path[idStart:], "/")
 		tc.recentLogReqs <- r.URL.Path[idStart:idEnd]
 		tc.createMultiPartResp(w)
+	case strings.Contains(r.URL.Path, "containermetrics"):
+		idStart := strings.Index(r.URL.Path, "containermetrics/") + len("containermetrics/")
+		idEnd := idStart + strings.Index(r.URL.Path[idStart:], "/")
+		tc.containerMetricsReqs <- r.URL.Path[idStart:idEnd]
+		tc.createMultiPartResp(w)
 	}
 	log.Printf("Waiting on done")
 	<-tc.done
@@ -459,22 +534,4 @@ func formatUUID(uuid *events.UUID) string {
 	binary.LittleEndian.PutUint64(uuidBytes[:8], uuid.GetLow())
 	binary.LittleEndian.PutUint64(uuidBytes[8:], uuid.GetHigh())
 	return fmt.Sprintf("%x-%x-%x-%x-%x", uuidBytes[0:4], uuidBytes[4:6], uuidBytes[6:8], uuidBytes[8:10], uuidBytes[10:])
-}
-
-func (tc *tcServer) createMultiPartResp(rw http.ResponseWriter) {
-	if tc.response.statusCode != http.StatusOK {
-		http.Error(rw, "bad request", tc.response.statusCode)
-		return
-	}
-
-	mp := multipart.NewWriter(rw)
-	defer mp.Close()
-
-	rw.Header().Set("Content-Type", `multipart/x-protobuf; boundary=`+mp.Boundary())
-
-	partWriter, err := mp.CreatePart(nil)
-	if err != nil {
-		tc.errs <- err
-	}
-	partWriter.Write(tc.response.data)
 }

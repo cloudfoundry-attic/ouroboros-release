@@ -21,6 +21,10 @@ import (
 	"volley/drains"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 func main() {
 	println("started")
 	config, err := config.Load()
@@ -41,12 +45,10 @@ func main() {
 
 	conn := connectionmanager.New(config, idStore, metricBatcher)
 
-	for i := 0; i < config.FirehoseCount; i++ {
-		go conn.Firehose()
-	}
-	for i := 0; i < config.StreamCount; i++ {
-		go conn.Stream()
-	}
+	go syncRequest(config.FirehoseCount, conn.Firehose)
+	go syncRequest(config.StreamCount, conn.Stream)
+	go asyncRequest(config.AsyncRequestDelay, config.RecentLogCount, conn.RecentLogs)
+	go asyncRequest(config.AsyncRequestDelay, config.ContainerMetricCount, conn.ContainerMetrics)
 
 	if len(config.ETCDAddresses) > 0 {
 		cfg := client.Config{
@@ -69,6 +71,21 @@ func main() {
 	<-terminate
 	log.Print("Closing connections")
 	conn.Close()
+}
+
+func syncRequest(count int, endpoint func()) {
+	for i := 0; i < count; i++ {
+		go endpoint()
+	}
+}
+
+func asyncRequest(delay conf.DurationRange, count int, endpoint func()) {
+	delta := int(delay.Max - delay.Min)
+	for i := 0; i < count; i++ {
+		delay := delay.Min + time.Duration(rand.Intn(delta))
+		go endpoint()
+		time.Sleep(delay)
+	}
 }
 
 func killAfterRandomDelay(delayRange conf.DurationRange) {

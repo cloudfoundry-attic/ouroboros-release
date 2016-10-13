@@ -4,15 +4,10 @@ import (
 	"crypto/sha1"
 	"math/rand"
 	"path"
-	"time"
 
 	"github.com/coreos/etcd/client"
 	"golang.org/x/net/context"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 type IDGetter interface {
 	Get() (id string)

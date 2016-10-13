@@ -94,6 +94,18 @@ func (c *ConnectionManager) RecentLogs() {
 	c.batcher.BatchCounter("volley.numberOfRequests").SetTag("conn_type", "recentlogs").Increment()
 }
 
+func (c *ConnectionManager) ContainerMetrics() {
+	consumer := c.pick()
+	appID := c.appStore.Get()
+	_, err := consumer.ContainerMetrics(appID, c.conf.AuthToken)
+	if err != nil {
+		c.batcher.BatchCounter("volley.numberOfRequestErrors").SetTag("conn_type", "containermetrics").Increment()
+		log.Printf("Error from %s: %v\n", appID, err.Error())
+		return
+	}
+	c.batcher.BatchCounter("volley.numberOfRequests").SetTag("conn_type", "containermetrics").Increment()
+}
+
 func (c *ConnectionManager) consume(msgs <-chan *events.Envelope, connType string) {
 	delta := int(c.conf.ReceiveDelay.Max - c.conf.ReceiveDelay.Min)
 	var count int

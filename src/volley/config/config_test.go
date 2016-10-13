@@ -66,6 +66,45 @@ var _ = Describe("Config", func() {
 			Expect(err.Error()).To(Equal("Error parsing DurationRange.Max: time: invalid duration foo"))
 		})
 
+		It("returns an error if ASYNC_REQUEST_DELAY isn't a range", func() {
+			os.Setenv("TC_ADDRS", "foo,bar")
+			defer os.Unsetenv("TC_ADDRS")
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
+			os.Setenv("ASYNC_REQUEST_DELAY", "1us")
+			defer os.Unsetenv("ASYNC_REQUEST_DELAY")
+
+			_, err := config.Load()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("Expected DurationRange to be of format {min}-{max}"))
+		})
+
+		It("returns an error if ASYNC_REQUEST_DELAY.Min can't be parsed", func() {
+			os.Setenv("TC_ADDRS", "foo,bar")
+			defer os.Unsetenv("TC_ADDRS")
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
+			os.Setenv("ASYNC_REQUEST_DELAY", "foo-1us")
+			defer os.Unsetenv("ASYNC_REQUEST_DELAY")
+
+			_, err := config.Load()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("Error parsing DurationRange.Min: time: invalid duration foo"))
+		})
+
+		It("returns an error if ASYNC_REQUEST_DELAY.Max can't be parsed", func() {
+			os.Setenv("TC_ADDRS", "foo,bar")
+			defer os.Unsetenv("TC_ADDRS")
+			os.Setenv("METRON_PORT", "12345")
+			defer os.Unsetenv("METRON_PORT")
+			os.Setenv("ASYNC_REQUEST_DELAY", "1us-foo")
+			defer os.Unsetenv("ASYNC_REQUEST_DELAY")
+
+			_, err := config.Load()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("Error parsing DurationRange.Max: time: invalid duration foo"))
+		})
+
 		It("returns an error if KILL_DELAY isn't a range", func() {
 			os.Setenv("TC_ADDRS", "foo,bar")
 			defer os.Unsetenv("TC_ADDRS")
@@ -114,6 +153,10 @@ var _ = Describe("Config", func() {
 			defer os.Unsetenv("FIREHOSE_COUNT")
 			os.Setenv("STREAM_COUNT", "2")
 			defer os.Unsetenv("STREAM_COUNT")
+			os.Setenv("RECENT_LOG_COUNT", "2")
+			defer os.Unsetenv("RECENT_LOG_COUNT")
+			os.Setenv("CONTAINER_METRIC_COUNT", "2")
+			defer os.Unsetenv("CONTAINER_METRIC_COUNT")
 			os.Setenv("SUB_ID", "subscription")
 			defer os.Unsetenv("SUB_ID")
 			os.Setenv("RECV_DELAY", "1us-10ms")
@@ -131,6 +174,8 @@ var _ = Describe("Config", func() {
 			Expect(c.AuthToken).To(Equal("token"))
 			Expect(c.FirehoseCount).To(Equal(1))
 			Expect(c.StreamCount).To(Equal(2))
+			Expect(c.RecentLogCount).To(Equal(2))
+			Expect(c.ContainerMetricCount).To(Equal(2))
 			Expect(c.SubscriptionID).To(Equal("subscription"))
 			Expect(c.ReceiveDelay.Min).To(Equal(time.Microsecond))
 			Expect(c.ReceiveDelay.Max).To(Equal(10 * time.Millisecond))

@@ -20,6 +20,10 @@ properties:
     default: 10
   volley.stream_count:
     description: "Number of Stream connections to open. AppID must be set"
+  volley.recent_log_count:
+    description: "Number of Recentlog connections to open. AppID must be set"
+  volley.container_metric_count:
+    description: "Number of ContainerMetric connections to open. AppID must be set"
   volley.syslog_drains:
     description: "Number of syslog drains to advertise in etcd"
     default: 0
@@ -32,6 +36,9 @@ properties:
   volley.receive_delay:
     description: "Range of durations to delay each time a message is received"
     default: "1ms-100ms"
+  volley.async_request_delay:
+    description: "Range of durations to delay for each async request"
+    default: "1ms-1000ms"
   volley.kill_delay:
     description: "Range of durations to delay before killing the process with SIGKILL"
     default: "1m-1h"
