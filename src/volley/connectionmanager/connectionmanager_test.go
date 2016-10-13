@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -136,7 +137,8 @@ var _ = Describe("Connection", func() {
 				Max: 100 * time.Millisecond,
 			}
 
-			go conn.Firehose()
+			slowConn := connectionmanager.New(cfg, mockIDStore, mockBatcher)
+			go slowConn.Firehose()
 
 			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
 			go handler.sendLoop(100000)
@@ -306,36 +308,96 @@ var _ = Describe("Connection", func() {
 				Min: 99 * time.Millisecond,
 				Max: 100 * time.Millisecond,
 			}
+			slowConn := connectionmanager.New(cfg, mockIDStore, mockBatcher)
 
-			go conn.Stream()
+			go slowConn.Stream()
 
 			Eventually(handler.streamApps).Should(Receive())
 			go handler.sendLoop(100000)
 			Eventually(handler.errs).Should(Receive())
 		})
 	})
+
+	Describe("Recent Logs", func() {
+		It("sends a request to the recentlogs endpoint", func() {
+			go conn.RecentLogs()
+
+			Eventually(handler.recentLogReqs).Should(Receive())
+			Consistently(handler.errs).ShouldNot(Receive())
+		})
+
+		It("increments a connection metric for recentlogs", func() {
+			msg := &events.Envelope{
+				Origin:    proto.String("foo"),
+				EventType: events.Envelope_LogMessage.Enum(),
+				LogMessage: &events.LogMessage{
+					Message:     []byte("some-log"),
+					MessageType: events.LogMessage_OUT.Enum(),
+					Timestamp:   proto.Int64(time.Now().UnixNano()),
+					AppId:       proto.String("some-app"),
+				},
+			}
+			b, err := proto.Marshal(msg)
+			Expect(err).ToNot(HaveOccurred())
+			handler.setResponse(response{
+				data:       b,
+				statusCode: 200,
+			})
+
+			go conn.RecentLogs()
+			close(handler.done)
+
+			Eventually(handler.recentLogReqs).Should(Receive())
+			Consistently(handler.errs).ShouldNot(Receive())
+			Eventually(mockBatcher.BatchCounterInput, 2).Should(BeCalled(With("volley.numberOfRequests")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "recentlogs")))
+			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
+		})
+
+		It("increments an error metric if request errors out", func() {
+			handler.setResponse(response{data: nil, statusCode: 500})
+			go conn.RecentLogs()
+			close(handler.done)
+
+			Eventually(handler.recentLogReqs).Should(Receive())
+			Consistently(handler.errs).ShouldNot(Receive())
+			Eventually(mockBatcher.BatchCounterInput, 2).Should(BeCalled(With("volley.numberOfRequestErrors")))
+			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "recentlogs")))
+			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
+		})
+	})
 })
 
 type tcServer struct {
-	ws           *websocket.Conn
-	streamApps   chan string
-	firehoseSubs chan string
-	errs         chan error
-	done         chan struct{}
+	ws            *websocket.Conn
+	response      response
+	streamApps    chan string
+	firehoseSubs  chan string
+	recentLogReqs chan string
+	errs          chan error
+	done          chan struct{}
+}
+
+type response struct {
+	data       []byte
+	statusCode int
 }
 
 func newTCServer() *tcServer {
 	return &tcServer{
-		streamApps:   make(chan string, 100),
-		firehoseSubs: make(chan string, 100),
-		errs:         make(chan error, 100),
-		done:         make(chan struct{}),
+		streamApps:    make(chan string, 100),
+		firehoseSubs:  make(chan string, 100),
+		recentLogReqs: make(chan string, 100),
+		errs:          make(chan error, 100),
+		done:          make(chan struct{}),
 	}
 }
 
 func (tc *tcServer) stop() {
-	tc.ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Time{})
-	tc.ws.Close()
+	if tc.ws != nil {
+		tc.ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Time{})
+		tc.ws.Close()
+	}
 	close(tc.done)
 }
 
@@ -361,20 +423,31 @@ func (tc *tcServer) sendLoop(sendCount int) {
 	}
 }
 
+func (tc *tcServer) setResponse(resp response) {
+	tc.response = resp
+}
+
 func (tc *tcServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer GinkgoRecover()
 	var err error
-	tc.ws, err = websocket.Upgrade(w, r, nil, 1024, 1024)
-	Expect(err).ToNot(HaveOccurred())
 
 	switch {
 	case strings.Contains(r.URL.Path, "stream"):
+		tc.ws, err = websocket.Upgrade(w, r, nil, 1024, 1024)
+		Expect(err).ToNot(HaveOccurred())
 		idStart := strings.Index(r.URL.Path, "stream/") + len("stream/")
 		idEnd := idStart + strings.Index(r.URL.Path[idStart:], "/")
 		tc.streamApps <- r.URL.Path[idStart:idEnd]
 	case strings.Contains(r.URL.Path, "firehose"):
+		tc.ws, err = websocket.Upgrade(w, r, nil, 1024, 1024)
+		Expect(err).ToNot(HaveOccurred())
 		idStart := strings.Index(r.URL.Path, "firehose/") + len("firehose/")
 		tc.firehoseSubs <- r.URL.Path[idStart:]
+	case strings.Contains(r.URL.Path, "recentlogs"):
+		idStart := strings.Index(r.URL.Path, "recentlogs/") + len("recentlogs/")
+		idEnd := idStart + strings.Index(r.URL.Path[idStart:], "/")
+		tc.recentLogReqs <- r.URL.Path[idStart:idEnd]
+		tc.createMultiPartResp(w)
 	}
 	log.Printf("Waiting on done")
 	<-tc.done
@@ -386,4 +459,22 @@ func formatUUID(uuid *events.UUID) string {
 	binary.LittleEndian.PutUint64(uuidBytes[:8], uuid.GetLow())
 	binary.LittleEndian.PutUint64(uuidBytes[8:], uuid.GetHigh())
 	return fmt.Sprintf("%x-%x-%x-%x-%x", uuidBytes[0:4], uuidBytes[4:6], uuidBytes[6:8], uuidBytes[8:10], uuidBytes[10:])
+}
+
+func (tc *tcServer) createMultiPartResp(rw http.ResponseWriter) {
+	if tc.response.statusCode != http.StatusOK {
+		http.Error(rw, "bad request", tc.response.statusCode)
+		return
+	}
+
+	mp := multipart.NewWriter(rw)
+	defer mp.Close()
+
+	rw.Header().Set("Content-Type", `multipart/x-protobuf; boundary=`+mp.Boundary())
+
+	partWriter, err := mp.CreatePart(nil)
+	if err != nil {
+		tc.errs <- err
+	}
+	partWriter.Write(tc.response.data)
 }
