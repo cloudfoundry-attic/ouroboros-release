@@ -60,7 +60,7 @@ func main() {
 		}
 		api := client.NewKeysAPI(c)
 		for i := 0; i < config.SyslogDrains; i++ {
-			drains.AdvertiseRandom(idStore, api, config.SyslogAddresses)
+			drains.AdvertiseRandom(idStore, api, config.SyslogAddresses, config.SyslogTTL)
 		}
 	}
 

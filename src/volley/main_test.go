@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -86,6 +87,7 @@ var _ = Describe("Volley", func() {
 			"STREAM_COUNT=1",
 			"SYSLOG_ADDRS=" + syslogURL,
 			"SYSLOG_DRAINS=5",
+			"SYSLOG_TTL=1h",
 		}
 
 		Expect(cmd.Start()).To(Succeed())
@@ -115,7 +117,10 @@ var _ = Describe("Volley", func() {
 			Expect(req.Method).To(Equal("PUT"))
 			Expect(req.URL.Path).To(HavePrefix("/v2/keys/loggregator/services/app-id/"))
 			body := <-etcdhandler.bodies
-			Expect(string(body)).To(Equal("value=" + syslogURL))
+			params, err := url.ParseQuery(string(body))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(params.Get("value")).To(Equal(syslogURL))
+			Expect(params.Get("ttl")).To(Equal("3600"))
 		}
 	})
 })

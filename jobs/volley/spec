@@ -20,6 +20,9 @@ properties:
   volley.syslog_drains:
     description: "Number of syslog drains to advertise in etcd"
     default: 0
+  volley.syslog_ttl:
+    description: "The TTL value (in duration format) to use for syslog drains"
+    default: 1h
   volley.auth_token:
     description: "AuthToken used to confirm access to logs"
     default: ""

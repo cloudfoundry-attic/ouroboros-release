@@ -19,6 +19,7 @@ type Config struct {
 	RecentLogCount       int                `env:"recent_log_count"`
 	ContainerMetricCount int                `env:"container_metric_count"`
 	SyslogDrains         int                `env:"syslog_drains"`
+	SyslogTTL            time.Duration      `env:"syslog_ttl"`
 	SubscriptionID       string             `env:"sub_id"`
 	ReceiveDelay         conf.DurationRange `env:"recv_delay"`
 	AsyncRequestDelay    conf.DurationRange `env:"async_request_delay"`
