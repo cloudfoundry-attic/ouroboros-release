@@ -10,11 +10,11 @@ etcd_addrs = p("etcd.machines").map do |addr|
 end
 
 syslog_addrs = []
-if_link("syslogr") do |syslogr|
-  syslog_addrs = syslogr.instances.map do |instance|
-      "syslog://#{instance.address}:#{syslogr.p("syslogr.port")}"
-  end
+if_p("syslogr.ips") do |syslogr_ips|
+  syslog_addrs = syslogr_ips.map do |ip|
+      "syslog://#{ip}:#{p("syslogr.port")}"
 end
+
 %>
 
 RUN_DIR=/var/vcap/sys/run/volley

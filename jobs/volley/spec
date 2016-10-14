@@ -7,13 +7,6 @@ packages:
 - common
 - volley
 
-consumes:
-- name: syslogr
-  type: syslogr
-  optional: true
-  properties:
-    syslogr.port
-
 properties:
   volley.firehose_count:
     description: "Number of Firehose connections to open"
@@ -45,6 +38,14 @@ properties:
   volley.metric_batch_interval:
     description: "The interval for metric batching"
     default: "5s"
+
+  syslogr.ips:
+    description: "The syslogr IPs"
+    default: []
+  syslogr.port:
+    description: "The syslogr port"
+    default: ""
+
   trafficcontroller.ips:
     description: "The traffic controller IPs"
   trafficcontroller.outgoing_dropsonde_port:
