@@ -13,6 +13,7 @@ syslog_addrs = []
 if_p("syslogr.ips") do |syslogr_ips|
   syslog_addrs = syslogr_ips.map do |ip|
       "syslog://#{ip}:#{p("syslogr.port")}"
+  end
 end
 
 %>
