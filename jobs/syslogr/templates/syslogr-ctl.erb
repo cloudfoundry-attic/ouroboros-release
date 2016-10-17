@@ -25,6 +25,9 @@ case $1 in
     export DELAY='<%= p("syslogr.delay") %>'
     export METRON_PORT='<%= p("metron_agent.listening_port") %>'
 
+    ulimit -l unlimited
+    ulimit -n 65536
+
     chpst -u vcap:vcap /var/vcap/packages/syslogr/bin/syslogr &
 
     echo $! > $PIDFILE
