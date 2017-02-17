@@ -141,7 +141,7 @@ var _ = Describe("Connection", func() {
 			go slowConn.Firehose()
 
 			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
-			go handler.sendLoop(100000)
+			go handler.sendLoop(1000000)
 			var err error
 			Eventually(handler.errs).Should(Receive(&err))
 			Expect(err).To(HaveOccurred())
@@ -313,7 +313,7 @@ var _ = Describe("Connection", func() {
 			go slowConn.Stream()
 
 			Eventually(handler.streamApps).Should(Receive())
-			go handler.sendLoop(100000)
+			go handler.sendLoop(10000000)
 			Eventually(handler.errs).Should(Receive())
 		})
 	})
@@ -463,8 +463,10 @@ func (tc *tcServer) sendLoop(sendCount int) {
 			Name:  proto.String("foo"),
 		},
 	}
+
 	b, err := proto.Marshal(msg)
 	Expect(err).ToNot(HaveOccurred())
+
 	for i := 0; i < sendCount; i++ {
 		Expect(tc.ws.SetWriteDeadline(time.Now().Add(10 * time.Millisecond))).To(Succeed())
 		err := tc.ws.WriteMessage(websocket.BinaryMessage, b)
