@@ -16,12 +16,12 @@ import (
 )
 
 type config struct {
-	TCAddr       string `env:"tc_address"`
-	SubID        string `env:"subscription_id"`
-	MetronPort   int    `env:"metron_port"`
-	UAAAddr      string `env:"uaa_address"`
-	ClientID     string `env:"client_id"`
-	ClientSecret string `env:"client_secret"`
+	TCAddr       string `env:"TC_ADDRESS"`
+	SubID        string `env:"SUBSCRIPTION_ID"`
+	MetronPort   int    `env:"METRON_PORT"`
+	UAAAddr      string `env:"UAA_ADDRESS"`
+	ClientID     string `env:"CLIENT_ID"`
+	ClientSecret string `env:"CLIENT_SECRET"`
 }
 
 func main() {
