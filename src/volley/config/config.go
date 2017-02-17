@@ -8,22 +8,22 @@ import (
 )
 
 type Config struct {
-	TCAddresses          []string           `env:"tc_addrs,required"`
-	MetronPort           int                `env:"metron_port,required"`
-	MetricBatchInterval  time.Duration      `env:"metric_batch_interval"`
-	ETCDAddresses        []string           `env:"etcd_addrs"`
-	SyslogAddresses      []string           `env:"syslog_addrs"`
-	AuthToken            string             `env:"auth_token"`
-	FirehoseCount        int                `env:"firehose_count"`
-	StreamCount          int                `env:"stream_count"`
-	RecentLogCount       int                `env:"recent_log_count"`
-	ContainerMetricCount int                `env:"container_metric_count"`
-	SyslogDrains         int                `env:"syslog_drains"`
-	SyslogTTL            time.Duration      `env:"syslog_ttl"`
-	SubscriptionID       string             `env:"sub_id"`
-	ReceiveDelay         conf.DurationRange `env:"recv_delay"`
-	AsyncRequestDelay    conf.DurationRange `env:"async_request_delay"`
-	KillDelay            conf.DurationRange `env:"kill_delay"`
+	TCAddresses          []string           `env:"TC_ADDRS,required"`
+	MetronPort           int                `env:"METRON_PORT,required"`
+	MetricBatchInterval  time.Duration      `env:"METRIC_BATCH_INTERVAL"`
+	ETCDAddresses        []string           `env:"ETCD_ADDRS"`
+	SyslogAddresses      []string           `env:"SYSLOG_ADDRS"`
+	AuthToken            string             `env:"AUTH_TOKEN"`
+	FirehoseCount        int                `env:"FIREHOSE_COUNT"`
+	StreamCount          int                `env:"STREAM_COUNT"`
+	RecentLogCount       int                `env:"RECENT_LOG_COUNT"`
+	ContainerMetricCount int                `env:"CONTAINER_METRIC_COUNT"`
+	SyslogDrains         int                `env:"SYSLOG_DRAINS"`
+	SyslogTTL            time.Duration      `env:"SYSLOG_TTL"`
+	SubscriptionID       string             `env:"SUB_ID"`
+	ReceiveDelay         conf.DurationRange `env:"RECV_DELAY"`
+	AsyncRequestDelay    conf.DurationRange `env:"ASYNC_REQUEST_DELAY"`
+	KillDelay            conf.DurationRange `env:"KILL_DELAY"`
 }
 
 func Load() (Config, error) {
