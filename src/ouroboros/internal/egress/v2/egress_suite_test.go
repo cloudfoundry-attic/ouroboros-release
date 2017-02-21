@@ -11,5 +11,5 @@ import (
 func TestEgress(t *testing.T) {
 	log.SetOutput(GinkgoWriter)
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Ouroboros - Egress V1 Suite")
+	RunSpecs(t, "Ouroboros - Egress V2 Suite")
 }
