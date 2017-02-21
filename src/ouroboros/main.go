@@ -23,11 +23,11 @@ func main() {
 	conf := loadConfig()
 	token := fetchUaaToken(conf)
 
-	log.Println("Starting ouroboros egress")
-	udpWriter := egressv1.NewUDPWriter(fmt.Sprintf("localhost:%d", conf.MetronPort))
+	log.Println("Starting ouroboros V1 egress")
+	v1Writer := egressv1.NewWriter(fmt.Sprintf("localhost:%d", conf.MetronPort))
 
 	log.Println("Starting ouroboros ingress")
-	ingress.Consume(conf.TCAddr, conf.SubID, token, udpWriter)
+	ingress.Consume(conf.TCAddr, conf.SubID, token, v1Writer)
 }
 
 func loadConfig() config {

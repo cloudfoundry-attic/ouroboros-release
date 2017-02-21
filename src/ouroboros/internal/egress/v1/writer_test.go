@@ -13,7 +13,7 @@ import (
 var _ = Describe("UdpWriter", func() {
 	var (
 		udpListener *testUDPListener
-		udpWriter   *egress.UDPWriter
+		udpWriter   *egress.Writer
 	)
 
 	BeforeEach(func() {
@@ -22,7 +22,7 @@ var _ = Describe("UdpWriter", func() {
 		}
 		udpAddr := udpListener.Listen()
 
-		udpWriter = egress.NewUDPWriter(udpAddr)
+		udpWriter = egress.NewWriter(udpAddr)
 	})
 
 	It("sends the envelope over UDP", func() {

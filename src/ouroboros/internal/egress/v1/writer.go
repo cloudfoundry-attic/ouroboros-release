@@ -8,18 +8,18 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-type UDPWriter struct {
+type Writer struct {
 	addr string
 	conn *net.UDPConn
 }
 
-func NewUDPWriter(addr string) *UDPWriter {
-	return &UDPWriter{
+func NewWriter(addr string) *Writer {
+	return &Writer{
 		addr: addr,
 	}
 }
 
-func (w *UDPWriter) Write(e *events.Envelope) {
+func (w *Writer) Write(e *events.Envelope) {
 	w.setupConn()
 
 	data, err := proto.Marshal(e)
@@ -33,7 +33,7 @@ func (w *UDPWriter) Write(e *events.Envelope) {
 	}
 }
 
-func (w *UDPWriter) setupConn() {
+func (w *Writer) setupConn() {
 	if w.conn != nil {
 		return
 	}
