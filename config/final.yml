@@ -3,4 +3,4 @@ final_name: ouroboros
 blobstore:
   provider: s3
   options:
-    bucket_name: ouroboros
+    bucket_name: loggregator-release-blobs
