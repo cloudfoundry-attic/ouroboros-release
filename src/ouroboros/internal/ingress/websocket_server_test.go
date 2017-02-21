@@ -1,4 +1,4 @@
-package main_test
+package ingress_test
 
 import (
 	"net/http"
@@ -40,7 +40,7 @@ func (h *testWebsocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	<-h.done
 }
 
-func (h *testWebsocketHandler) Send(msg []byte) {
+func (h *testWebsocketHandler) Send(msg []byte) error {
 	<-h.started
-	Expect(h.conn.WriteMessage(websocket.BinaryMessage, msg)).To(Succeed())
+	return h.conn.WriteMessage(websocket.BinaryMessage, msg)
 }

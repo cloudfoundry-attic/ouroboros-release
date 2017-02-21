@@ -1,4 +1,4 @@
-package main_test
+package egress_test
 
 import (
 	"log"
@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestOuroboros(t *testing.T) {
+func TestEgress(t *testing.T) {
 	log.SetOutput(GinkgoWriter)
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Ouroboros Suite")
+	RunSpecs(t, "Ouroboros - Egress Suite")
 }
