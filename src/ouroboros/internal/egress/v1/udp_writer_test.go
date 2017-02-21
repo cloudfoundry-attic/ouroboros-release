@@ -1,7 +1,7 @@
 package egress_test
 
 import (
-	"ouroboros/internal/egress"
+	egress "ouroboros/internal/egress/v1"
 
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"

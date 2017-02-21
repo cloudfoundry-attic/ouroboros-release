@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"ouroboros/internal/egress"
+	egressv1 "ouroboros/internal/egress/v1"
 	"ouroboros/internal/ingress"
 
 	"github.com/bradylove/envstruct"
@@ -24,7 +24,7 @@ func main() {
 	token := fetchUaaToken(conf)
 
 	log.Println("Starting ouroboros egress")
-	udpWriter := egress.NewUDPWriter(fmt.Sprintf("localhost:%d", conf.MetronPort))
+	udpWriter := egressv1.NewUDPWriter(fmt.Sprintf("localhost:%d", conf.MetronPort))
 
 	log.Println("Starting ouroboros ingress")
 	ingress.Consume(conf.TCAddr, conf.SubID, token, udpWriter)
