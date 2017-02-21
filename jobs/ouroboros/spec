@@ -2,20 +2,26 @@
 name: ouroboros
 templates:
   ouroboros-ctl.erb: bin/ouroboros-ctl
+  ca.crt.erb: certs/ca.crt
+  client.crt.erb: certs/client.crt
+  client.key.erb: certs/client.key
 
 packages:
 - ouroboros
 
 properties:
-  loggregator.traffic_controller_url:
-    description: "Traffic controller URL"
-
-  metron_agent.listening_port:
-    description: "Metron Listening Port"
+  loggregator.egress_addr:
+    description: "Loggregator's egress address"
+  loggregator.ingress_port:
+    description: "Loggregator's ingress port (assumes localhost)"
     default: "3457"
+  loggregator.ingress_version:
+    description: "Loggregator's ingress API version"
+    default: 1
+    example: ["1", "2"]
 
-  uaa.url:
-    description: "URL for the UAA server"
+  uaa.addr:
+    description: "The address for the UAA server"
   uaa.client_id:
     description: "The client who has access to the loggregator firehose"
   uaa.client_secret:
@@ -23,3 +29,16 @@ properties:
 
   ouroboros.subscription_id:
     description: "The subscription id to be used for the firehose"
+
+  loggregator.tls.ca:
+    description: "The CA certificate for Loggregator's ingress"
+    default: ""
+  loggregator.tls.cn:
+    description: "The common name for Loggregator's ingress"
+    default: "metron"
+  ouroboros.loggregator.tls.cert:
+    description: "The client certificate for Loggregator's ingress"
+    default: ""
+  ouroboros.loggregator.tls.key:
+    description: "The client private key for Loggregator's ingress"
+    default: ""

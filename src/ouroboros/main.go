@@ -16,14 +16,14 @@ import (
 )
 
 type config struct {
-	TCAddr       string `env:"TC_ADDRESS,      required"`
-	SubID        string `env:"SUBSCRIPTION_ID, required"`
-	UAAAddr      string `env:"UAA_ADDRESS,     required"`
-	ClientID     string `env:"CLIENT_ID,       required"`
-	ClientSecret string `env:"CLIENT_SECRET,   required"`
+	SubID        string `env:"SUBSCRIPTION_ID,         required"`
+	UAAAddr      string `env:"UAA_ADDR,                required"`
+	ClientID     string `env:"CLIENT_ID,               required"`
+	ClientSecret string `env:"CLIENT_SECRET,           required"`
 
-	EgressPort    int   `env:"LOGGREGATOR_EGRESS_PORT,     required"`
-	EgressVersion uint8 `env:"LOGGREGATOR_INGRESS_VERSION, required"`
+	LoggregatorEgressAddr     string `env:"LOGGREGATOR_EGRESS_ADDR,     required"`
+	LoggregatorIngressPort    int    `env:"LOGGREGATOR_INGRESS_PORT,    required"`
+	LoggregatorIngressVersion uint8  `env:"LOGGREGATOR_INGRESS_VERSION, required"`
 
 	TLSCACert           string `env:"LOGGREGATOR_TLS_CA_CERT"`
 	TLSClientCert       string `env:"LOGGREGATOR_TLS_CLIENT_CERT"`
@@ -36,7 +36,7 @@ func main() {
 	token := fetchUaaToken(conf)
 
 	log.Println("Starting ouroboros ingress")
-	ingress.Consume(conf.TCAddr, conf.SubID, token, buildWriter(conf))
+	ingress.Consume(conf.LoggregatorEgressAddr, conf.SubID, token, buildWriter(conf))
 }
 
 func loadConfig() config {
@@ -65,12 +65,12 @@ func fetchUaaToken(conf config) string {
 func buildWriter(conf config) ingress.EnvelopeWriter {
 	var writer ingress.EnvelopeWriter
 
-	if conf.EgressVersion == 1 {
+	if conf.LoggregatorIngressVersion == 1 {
 		log.Println("Starting ouroboros V1 egress")
-		writer = egressv1.NewWriter(fmt.Sprintf("localhost:%d", conf.EgressPort))
+		writer = egressv1.NewWriter(fmt.Sprintf("localhost:%d", conf.LoggregatorIngressPort))
 	}
 
-	if conf.EgressVersion == 2 {
+	if conf.LoggregatorIngressVersion == 2 {
 		log.Println("Starting ouroboros V2 egress")
 
 		creds := api.NewCredentials(
@@ -81,7 +81,7 @@ func buildWriter(conf config) ingress.EnvelopeWriter {
 		)
 
 		writer = egressv2.NewWriter(
-			fmt.Sprintf("localhost:%d", conf.EgressPort),
+			fmt.Sprintf("localhost:%d", conf.LoggregatorIngressPort),
 			converter.NewConverter(),
 			grpc.WithTransportCredentials(creds),
 		)
