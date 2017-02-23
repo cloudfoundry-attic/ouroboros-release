@@ -69,7 +69,7 @@ var _ = Describe("WebsocketConsumer", func() {
 		Expect(e.GetOrigin()).To(Equal("ouroboros"))
 
 		counterEvent := e.GetCounterEvent()
-		Expect(counterEvent.GetName()).To(Equal("ouroboros.forwardedMessages"))
+		Expect(counterEvent.GetName()).To(Equal("ouroboros.ingress"))
 		Expect(counterEvent.GetDelta()).To(Equal(uint64(1000)))
 	})
 })

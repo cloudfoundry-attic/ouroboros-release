@@ -18,6 +18,7 @@ type Converter interface {
 type Writer struct {
 	sender    loggregator.Ingress_SenderClient
 	converter Converter
+	count     int
 }
 
 func NewWriter(addr string, c Converter, dialOpts ...grpc.DialOption) *Writer {
@@ -38,5 +39,10 @@ func NewWriter(addr string, c Converter, dialOpts ...grpc.DialOption) *Writer {
 func (w *Writer) Write(msg *events.Envelope) {
 	if err := w.sender.Send(w.converter.ToV2(msg)); err != nil {
 		log.Fatalf("Failed to send V2 envelope: %s", err)
+	}
+
+	w.count++
+	if w.count%1000 == 0 {
+		log.Print("Egressed 1000 envelopes")
 	}
 }

@@ -12,10 +12,9 @@ import (
 
 var counterEvent = &events.Envelope{
 	Origin:    proto.String("ouroboros"),
-	Timestamp: proto.Int64(time.Now().UnixNano()),
 	EventType: events.Envelope_CounterEvent.Enum(),
 	CounterEvent: &events.CounterEvent{
-		Name:  proto.String("ouroboros.forwardedMessages"),
+		Name:  proto.String("ouroboros.ingress"),
 		Delta: proto.Uint64(1000),
 	},
 }
@@ -40,6 +39,7 @@ func Consume(addr, subId, token string, w EnvelopeWriter) {
 		w.Write(msg)
 
 		if msgCount%1000 == 0 {
+			counterEvent.Timestamp = proto.Int64(time.Now().UnixNano())
 			w.Write(counterEvent)
 		}
 	}
