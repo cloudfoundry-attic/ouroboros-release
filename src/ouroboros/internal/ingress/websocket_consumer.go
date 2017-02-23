@@ -39,6 +39,7 @@ func Consume(addr, subId, token string, w EnvelopeWriter) {
 		w.Write(msg)
 
 		if msgCount%1000 == 0 {
+			log.Print("Ingressed 1000 envelopes")
 			counterEvent.Timestamp = proto.Int64(time.Now().UnixNano())
 			w.Write(counterEvent)
 		}
