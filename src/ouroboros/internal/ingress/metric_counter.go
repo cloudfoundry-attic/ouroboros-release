@@ -48,7 +48,7 @@ func (m *MetricCounter) emitIngressCounter(delta uint64) {
 		Ip:         proto.String(m.instanceIP),
 		EventType:  events.Envelope_CounterEvent.Enum(),
 		CounterEvent: &events.CounterEvent{
-			Name:  proto.String("ouroboros.ingress"),
+			Name:  proto.String("ingress"),
 			Delta: proto.Uint64(delta),
 		},
 	}
