@@ -29,6 +29,11 @@ type config struct {
 	TLSClientCert       string `env:"LOGGREGATOR_TLS_CLIENT_CERT"`
 	TLSClientKey        string `env:"LOGGREGATOR_TLS_CLIENT_KEY"`
 	TLSEgressCommonName string `env:"LOGGREGATOR_TLS_EGRESS_CN"`
+
+	DeploymentName string `env:"DEPLOYMENT_NAME, required"`
+	JobName        string `env:"JOB_NAME,        required"`
+	InstanceIndex  string `env:"INSTANCE_INDEX,  required"`
+	InstanceIP     string `env:"INSTANCE_IP,     required"`
 }
 
 func main() {
@@ -91,5 +96,12 @@ func buildWriter(conf config) ingress.EnvelopeWriter {
 		log.Fatal("Invalid LOGGREGATOR_INGRESS_VERSION")
 	}
 
-	return writer
+	return ingress.NewMetricCounter(
+		conf.DeploymentName,
+		conf.JobName,
+		conf.InstanceIndex,
+		conf.InstanceIP,
+		1000,
+		writer,
+	)
 }

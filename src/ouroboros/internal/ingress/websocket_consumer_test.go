@@ -53,25 +53,6 @@ var _ = Describe("WebsocketConsumer", func() {
 		Expect(e.GetOrigin()).To(Equal("some-origin"))
 		Expect(e.GetTimestamp()).To(Equal(int64(99)))
 	})
-
-	It("writes a counter metric for the number of consumed envelopes", func() {
-		var e *events.Envelope
-		f := func() bool {
-			select {
-			case e = <-spyEnvelopeWriter.envelope:
-				return e.GetEventType() == events.Envelope_CounterEvent
-			default:
-				return false
-			}
-		}
-
-		Eventually(f, 1, "1ns").Should(BeTrue())
-		Expect(e.GetOrigin()).To(Equal("ouroboros"))
-
-		counterEvent := e.GetCounterEvent()
-		Expect(counterEvent.GetName()).To(Equal("ouroboros.ingress"))
-		Expect(counterEvent.GetDelta()).To(Equal(uint64(1000)))
-	})
 })
 
 func serveDataUp(server *testWebsocketHandler, data []byte) {
