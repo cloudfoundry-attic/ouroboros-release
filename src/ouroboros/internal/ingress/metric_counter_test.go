@@ -45,7 +45,7 @@ var _ = Describe("MetricCounter", func() {
 		Expect(s[10].GetIndex()).To(Equal("instance-index"))
 		Expect(s[10].GetIp()).To(Equal("instance-ip"))
 		Expect(s[10].GetCounterEvent().GetDelta()).To(Equal(uint64(10)))
-		Expect(s[10].GetCounterEvent().GetName()).To(Equal("ouroboros.ingress"))
+		Expect(s[10].GetCounterEvent().GetName()).To(Equal("ingress"))
 	})
 })
 

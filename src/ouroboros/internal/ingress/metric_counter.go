@@ -1,6 +1,7 @@
 package ingress
 
 import (
+	"log"
 	"time"
 
 	"github.com/cloudfoundry/sonde-go/events"
@@ -35,6 +36,7 @@ func (m *MetricCounter) Write(e *events.Envelope) {
 
 	if m.counter%m.reportCount == 0 {
 		m.emitIngressCounter(m.reportCount)
+		log.Printf("Ingressed %d envelopes", m.reportCount)
 	}
 }
 
