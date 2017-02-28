@@ -108,8 +108,8 @@ var _ = DescribeTable("v1->v2->v1",
 		EventType: events.Envelope_CounterEvent.Enum(),
 		CounterEvent: &events.CounterEvent{
 			Name:  proto.String("some-name"),
-			Delta: proto.Uint64(0),
-			Total: proto.Uint64(4356782),
+			Total: proto.Uint64(0),
+			Delta: proto.Uint64(4356782),
 		},
 	}),
 	Entry("Error", &events.Envelope{

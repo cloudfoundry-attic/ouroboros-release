@@ -137,8 +137,8 @@ func convertCounterEvent(v2e *v2.Envelope, e *events.Envelope) {
 	v2e.Message = &v2.Envelope_Counter{
 		Counter: &v2.Counter{
 			Name: t.GetName(),
-			Value: &v2.Counter_Total{
-				Total: t.GetTotal(),
+			Value: &v2.Counter_Delta{
+				Delta: t.GetDelta(),
 			},
 		},
 	}
