@@ -29,8 +29,6 @@ properties:
 
   ouroboros.subscription_id:
     description: "The subscription id to be used for the firehose"
-  ouroboros.deployment_name:
-    description: "Deployment name used to tag envelopes emitted by ouroboros"
 
   loggregator.tls.ca:
     description: "The CA certificate for Loggregator's ingress"

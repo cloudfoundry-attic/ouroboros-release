@@ -36,7 +36,7 @@ case $1 in
     export LOGGREGATOR_TLS_CLIENT_CERT=$CERT_DIR/client.crt
     export LOGGREGATOR_TLS_CLIENT_KEY=$CERT_DIR/client.key
 
-    export DEPLOYMENT_NAME='<%= p("ouroboros.deployment_name") %>'
+    export DEPLOYMENT_NAME='<%= spec.deployment %>'
     export JOB_NAME='<%= spec.name %>'
     export INSTANCE_INDEX='<%= spec.id || spec.index %>'
     export INSTANCE_IP='<%= spec.ip %>'
