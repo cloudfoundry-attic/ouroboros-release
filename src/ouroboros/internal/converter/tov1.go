@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	v2 "ouroboros/internal/loggregator/v2"
+	v2 "loggregator/v2"
 	"strings"
 
 	"github.com/cloudfoundry/sonde-go/events"

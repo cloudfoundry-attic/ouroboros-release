@@ -7,7 +7,7 @@ package egress_test
 
 import (
 	"context"
-	loggregator "ouroboros/internal/loggregator/v2"
+	loggregator "loggregator/v2"
 
 	"github.com/cloudfoundry/sonde-go/events"
 

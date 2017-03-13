@@ -6,7 +6,7 @@ import (
 
 	"github.com/cloudfoundry/sonde-go/events"
 
-	loggregator "ouroboros/internal/loggregator/v2"
+	loggregator "loggregator/v2"
 
 	"google.golang.org/grpc"
 )

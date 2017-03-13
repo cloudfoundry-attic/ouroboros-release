@@ -3,9 +3,9 @@ package egress_test
 import (
 	"fmt"
 	"log"
+	loggregator "loggregator/v2"
 	"net"
 	egress "ouroboros/internal/egress/v2"
-	loggregator "ouroboros/internal/loggregator/v2"
 
 	"google.golang.org/grpc"
 

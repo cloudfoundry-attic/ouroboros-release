@@ -1,8 +1,8 @@
 package converter_test
 
 import (
+	v2 "loggregator/v2"
 	"ouroboros/internal/converter"
-	v2 "ouroboros/internal/loggregator/v2"
 
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"

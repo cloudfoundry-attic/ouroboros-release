@@ -1,7 +1,7 @@
 package converter
 
 import (
-	v2 "ouroboros/internal/loggregator/v2"
+	v2 "loggregator/v2"
 
 	"github.com/cloudfoundry/sonde-go/events"
 )
