@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"time"
-	"volley/config"
 	"volley/connectionmanager"
 
 	. "github.com/apoydence/eachers"
@@ -27,7 +26,6 @@ import (
 
 var _ = Describe("Connection", func() {
 	var (
-		cfg         config.Config
 		handler     *tcServer
 		server      *httptest.Server
 		mockBatcher *mockBatcher
@@ -40,11 +38,6 @@ var _ = Describe("Connection", func() {
 		handler = newTCServer()
 		server = httptest.NewServer(handler)
 
-		cfg = config.Config{
-			TCAddresses:    []string{strings.Replace(server.URL, "http", "ws", 1)},
-			SubscriptionID: "some-sub-id",
-		}
-
 		mockIDStore = newMockAppIDStore()
 		mockIDStore.GetOutput.Ret0 <- "some-app-id"
 		mockBatcher = newMockBatcher()
@@ -52,7 +45,14 @@ var _ = Describe("Connection", func() {
 		testhelpers.AlwaysReturn(mockBatcher.BatchCounterOutput, mockChainer)
 		testhelpers.AlwaysReturn(mockChainer.SetTagOutput, mockChainer)
 
-		conn = connectionmanager.New(cfg, mockIDStore, mockBatcher)
+		conn = connectionmanager.New(
+			[]string{strings.Replace(server.URL, "http", "ws", 1)},
+			"some-auth",
+			"some-sub-id",
+			conf.DurationRange{},
+			mockIDStore,
+			mockBatcher,
+		)
 	})
 
 	AfterEach(func() {
@@ -69,14 +69,14 @@ var _ = Describe("Connection", func() {
 		It("creates a connection to the firehose endpoint", func() {
 			go conn.Firehose()
 
-			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+			Eventually(handler.firehoseSubs).Should(Receive(Equal("some-sub-id")))
 			Consistently(handler.errs).ShouldNot(Receive())
 		})
 
 		It("increments an openConnections metric when a new connection is made", func() {
 			go conn.Firehose()
 
-			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+			Eventually(handler.firehoseSubs).Should(Receive(Equal("some-sub-id")))
 			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.openConnections")))
 			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "firehose")))
 			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
@@ -85,7 +85,7 @@ var _ = Describe("Connection", func() {
 		It("increments a closedConnections metric when an error occurs", func() {
 			go conn.Firehose()
 
-			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+			Eventually(handler.firehoseSubs).Should(Receive(Equal("some-sub-id")))
 			Eventually(mockBatcher.BatchCounterInput).Should(BeCalled(With("volley.openConnections")))
 			Eventually(mockChainer.SetTagInput).Should(BeCalled(With("conn_type", "firehose")))
 			Eventually(mockChainer.IncrementCalled).Should(BeCalled())
@@ -99,7 +99,7 @@ var _ = Describe("Connection", func() {
 		It("increments a receivedEnvelopes metric when new envelopes are received", func() {
 			go conn.Firehose()
 
-			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+			Eventually(handler.firehoseSubs).Should(Receive(Equal("some-sub-id")))
 
 			done := make(chan struct{})
 			defer close(done)
@@ -132,15 +132,21 @@ var _ = Describe("Connection", func() {
 		})
 
 		It("is a slow consumer when delay is set", func() {
-			cfg.ReceiveDelay = conf.DurationRange{
-				Min: 99 * time.Millisecond,
-				Max: 100 * time.Millisecond,
-			}
+			slowConn := connectionmanager.New(
+				[]string{strings.Replace(server.URL, "http", "ws", 1)},
+				"some-auth",
+				"some-sub-id",
+				conf.DurationRange{
+					Min: 99 * time.Millisecond,
+					Max: 100 * time.Millisecond,
+				},
+				mockIDStore,
+				mockBatcher,
+			)
 
-			slowConn := connectionmanager.New(cfg, mockIDStore, mockBatcher)
 			go slowConn.Firehose()
 
-			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+			Eventually(handler.firehoseSubs).Should(Receive(Equal("some-sub-id")))
 			go handler.sendLoop(1000000)
 			var err error
 			Eventually(handler.errs).Should(Receive(&err))
@@ -151,7 +157,7 @@ var _ = Describe("Connection", func() {
 		It("ignores system app IDs", func() {
 			go conn.Firehose()
 
-			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+			Eventually(handler.firehoseSubs).Should(Receive(Equal("some-sub-id")))
 
 			ev := &events.Envelope{
 				Origin:    proto.String("foo"),
@@ -175,7 +181,7 @@ var _ = Describe("Connection", func() {
 		DescribeTable("app ID store event types", func(ev *events.Envelope, appID string) {
 			go conn.Firehose()
 
-			Eventually(handler.firehoseSubs).Should(Receive(Equal(cfg.SubscriptionID)))
+			Eventually(handler.firehoseSubs).Should(Receive(Equal("some-sub-id")))
 
 			b, err := proto.Marshal(ev)
 			Expect(err).ToNot(HaveOccurred())
@@ -304,11 +310,17 @@ var _ = Describe("Connection", func() {
 		})
 
 		It("is a slow consumer when delay is set", func() {
-			cfg.ReceiveDelay = conf.DurationRange{
-				Min: 99 * time.Millisecond,
-				Max: 100 * time.Millisecond,
-			}
-			slowConn := connectionmanager.New(cfg, mockIDStore, mockBatcher)
+			slowConn := connectionmanager.New(
+				[]string{strings.Replace(server.URL, "http", "ws", 1)},
+				"some-auth",
+				"some-sub-id",
+				conf.DurationRange{
+					Min: 99 * time.Millisecond,
+					Max: 100 * time.Millisecond,
+				},
+				mockIDStore,
+				mockBatcher,
+			)
 
 			go slowConn.Stream()
 

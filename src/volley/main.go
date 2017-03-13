@@ -1,12 +1,11 @@
 package main
 
 import (
-	"conf"
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
-	"os/signal"
 	"syscall"
 	"time"
 
@@ -14,11 +13,10 @@ import (
 	"github.com/cloudfoundry/dropsonde/metric_sender"
 	"github.com/cloudfoundry/dropsonde/metricbatcher"
 	"github.com/cloudfoundry/dropsonde/metrics"
-	"github.com/coreos/etcd/client"
 
+	"volley/app"
 	"volley/config"
 	"volley/connectionmanager"
-	"volley/drains"
 )
 
 func init() {
@@ -26,16 +24,17 @@ func init() {
 }
 
 func main() {
-	println("started")
+	log.Println("Volley started...")
+	defer log.Println("Volley closing")
 	config, err := config.Load()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	idStore := connectionmanager.NewIDStore(config.StreamCount)
 
 	udpEmitter, err := emitter.NewUdpEmitter(fmt.Sprintf("127.0.0.1:%d", config.MetronPort))
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	eventEmitter := emitter.NewEventEmitter(udpEmitter, "volley")
 
@@ -43,57 +42,42 @@ func main() {
 	metricBatcher := metricbatcher.New(metricSender, config.MetricBatchInterval)
 	metrics.Initialize(metricSender, metricBatcher)
 
-	conn := connectionmanager.New(config, idStore, metricBatcher)
+	egressV1 := app.NewEgressV1(
+		config.FirehoseCount,
+		config.StreamCount,
+		config.RecentLogCount,
+		config.ContainerMetricCount,
+		config.TCAddresses,
+		config.AuthToken,
+		config.SubscriptionID,
+		config.ReceiveDelay,
+		config.AsyncRequestDelay,
+		idStore,
+		metricBatcher,
+	)
+	go egressV1.Start()
 
-	go syncRequest(config.FirehoseCount, conn.Firehose)
-	go syncRequest(config.StreamCount, conn.Stream)
-	go asyncRequest(config.AsyncRequestDelay, config.RecentLogCount, conn.RecentLogs)
-	go asyncRequest(config.AsyncRequestDelay, config.ContainerMetricCount, conn.ContainerMetrics)
+	killer := app.NewKiller(
+		config.KillDelay,
+		func() {
+			if err := syscall.Kill(os.Getpid(), syscall.SIGKILL); err != nil {
+				log.Fatalf("I HAVE TOO MUCH TO LIVE FOR: %s!!!!", err)
+			}
+		},
+	)
+	go killer.Start()
 
-	if len(config.ETCDAddresses) > 0 {
-		cfg := client.Config{
-			Endpoints: config.ETCDAddresses,
-		}
-		c, err := client.New(cfg)
-		if err != nil {
-			panic(err)
-		}
-		api := client.NewKeysAPI(c)
-		for i := 0; i < config.SyslogDrains; i++ {
-			drains.AdvertiseRandom(idStore, api, config.SyslogAddresses, config.SyslogTTL)
-		}
-	}
+	syslogRegistrar := app.NewSyslogRegistrar(
+		config.SyslogTTL,
+		config.SyslogDrains,
+		config.SyslogAddresses,
+		config.ETCDAddresses,
+		idStore,
+	)
+	go syslogRegistrar.Start()
 
-	go killAfterRandomDelay(config.KillDelay)
-
-	terminate := make(chan os.Signal, 1)
-	signal.Notify(terminate, os.Interrupt)
-	<-terminate
-	log.Print("Closing connections")
-	conn.Close()
-}
-
-func syncRequest(count int, endpoint func()) {
-	for i := 0; i < count; i++ {
-		go endpoint()
-	}
-}
-
-func asyncRequest(delay conf.DurationRange, count int, endpoint func()) {
-	delta := int(delay.Max - delay.Min)
-	for i := 0; i < count; i++ {
-		delay := delay.Min + time.Duration(rand.Intn(delta))
-		go endpoint()
-		time.Sleep(delay)
-	}
-}
-
-func killAfterRandomDelay(delayRange conf.DurationRange) {
-	delta := int(delayRange.Max - delayRange.Min)
-	killDelay := delayRange.Min + time.Duration(rand.Intn(delta))
-	killAfter := time.After(killDelay)
-	<-killAfter
-	if err := syscall.Kill(os.Getpid(), syscall.SIGKILL); err != nil {
-		log.Fatalf("I HAVE TOO MUCH TO LIVE FOR: %s!!!!", err)
+	// Blocking on pprof
+	if err := http.ListenAndServe("localhost:0", nil); err != nil {
+		log.Printf("Error starting pprof server: %s", err)
 	}
 }

@@ -2,6 +2,7 @@ package drains
 
 import (
 	"crypto/sha1"
+	"log"
 	"math/rand"
 	"path"
 	"time"
@@ -25,5 +26,8 @@ func AdvertiseRandom(ids IDGetter, etcd ETCDSetter, drains []string, ttl time.Du
 	drainHash := sha1.Sum([]byte(drain))
 	id := ids.Get()
 	key := path.Join("/loggregator", "services", id, string(drainHash[:]))
-	etcd.Set(context.Background(), key, drain, &client.SetOptions{TTL: ttl})
+	_, err := etcd.Set(context.Background(), key, drain, &client.SetOptions{TTL: ttl})
+	if err != nil {
+		log.Printf("etcd failed: %s", err)
+	}
 }

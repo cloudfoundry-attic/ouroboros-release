@@ -1,12 +1,12 @@
 package connectionmanager
 
 import (
+	"conf"
 	"crypto/tls"
 	"log"
 	"math/rand"
 	"sync"
 	"time"
-	"volley/config"
 
 	"github.com/cloudfoundry/dropsonde/envelope_extensions"
 	"github.com/cloudfoundry/dropsonde/metricbatcher"
@@ -29,25 +29,39 @@ type Batcher interface {
 }
 
 type ConnectionManager struct {
-	consumers    []*consumer.Consumer
-	consumerLock sync.Mutex
-	conf         config.Config
-	appStore     AppIDStore
-	batcher      Batcher
+	consumers      []*consumer.Consumer
+	consumerLock   sync.Mutex
+	appStore       AppIDStore
+	batcher        Batcher
+	tcAddrs        []string
+	authToken      string
+	subscriptionID string
+	receiveDelay   conf.DurationRange
 }
 
-func New(conf config.Config, appStore AppIDStore, batcher Batcher) *ConnectionManager {
+func New(
+	tcAddrs []string,
+	authToken string,
+	subscriptionID string,
+	receiveDelay conf.DurationRange,
+	appStore AppIDStore,
+	batcher Batcher,
+) *ConnectionManager {
+
 	var consumers []*consumer.Consumer
-	for _, tcAddress := range conf.TCAddresses {
-		c := consumer.New(tcAddress, &tls.Config{InsecureSkipVerify: true}, nil)
+	for _, tcAddrs := range tcAddrs {
+		c := consumer.New(tcAddrs, &tls.Config{InsecureSkipVerify: true}, nil)
 		consumers = append(consumers, c)
 	}
 
 	return &ConnectionManager{
-		conf:      conf,
-		consumers: consumers,
-		appStore:  appStore,
-		batcher:   batcher,
+		consumers:      consumers,
+		appStore:       appStore,
+		batcher:        batcher,
+		tcAddrs:        tcAddrs,
+		authToken:      authToken,
+		subscriptionID: subscriptionID,
+		receiveDelay:   receiveDelay,
 	}
 }
 
@@ -61,19 +75,19 @@ func (c *ConnectionManager) pick() *consumer.Consumer {
 
 func (c *ConnectionManager) Firehose() {
 	consumer := c.pick()
-	msgs, errs := consumer.Firehose(c.conf.SubscriptionID, c.conf.AuthToken)
+	msgs, errs := consumer.Firehose(c.subscriptionID, c.authToken)
 	c.batcher.BatchCounter("volley.openConnections").SetTag("conn_type", "firehose").Increment()
 	go c.consume(msgs, "firehose")
 	for err := range errs {
 		c.batcher.BatchCounter("volley.closedConnections").SetTag("conn_type", "firehose").Increment()
-		log.Printf("Error from %s: %v\n", c.conf.SubscriptionID, err.Error())
+		log.Printf("Error from %s: %v\n", c.subscriptionID, err.Error())
 	}
 }
 
 func (c *ConnectionManager) Stream() {
 	consumer := c.pick()
 	appID := c.appStore.Get()
-	msgs, errs := consumer.Stream(appID, c.conf.AuthToken)
+	msgs, errs := consumer.Stream(appID, c.authToken)
 	c.batcher.BatchCounter("volley.openConnections").SetTag("conn_type", "stream").Increment()
 	go c.consume(msgs, "stream")
 	for err := range errs {
@@ -85,7 +99,7 @@ func (c *ConnectionManager) Stream() {
 func (c *ConnectionManager) RecentLogs() {
 	consumer := c.pick()
 	appID := c.appStore.Get()
-	_, err := consumer.RecentLogs(appID, c.conf.AuthToken)
+	_, err := consumer.RecentLogs(appID, c.authToken)
 	if err != nil {
 		c.batcher.BatchCounter("volley.numberOfRequestErrors").SetTag("conn_type", "recentlogs").Increment()
 		log.Printf("Error from %s: %v\n", appID, err.Error())
@@ -97,7 +111,7 @@ func (c *ConnectionManager) RecentLogs() {
 func (c *ConnectionManager) ContainerMetrics() {
 	consumer := c.pick()
 	appID := c.appStore.Get()
-	_, err := consumer.ContainerMetrics(appID, c.conf.AuthToken)
+	_, err := consumer.ContainerMetrics(appID, c.authToken)
 	if err != nil {
 		c.batcher.BatchCounter("volley.numberOfRequestErrors").SetTag("conn_type", "containermetrics").Increment()
 		log.Printf("Error from %s: %v\n", appID, err.Error())
@@ -107,7 +121,7 @@ func (c *ConnectionManager) ContainerMetrics() {
 }
 
 func (c *ConnectionManager) consume(msgs <-chan *events.Envelope, connType string) {
-	delta := int(c.conf.ReceiveDelay.Max - c.conf.ReceiveDelay.Min)
+	delta := int(c.receiveDelay.Max - c.receiveDelay.Min)
 	var count int
 	for msg := range msgs {
 		count++
@@ -121,7 +135,7 @@ func (c *ConnectionManager) consume(msgs <-chan *events.Envelope, connType strin
 		if delta == 0 {
 			continue
 		}
-		delay := c.conf.ReceiveDelay.Min + time.Duration(rand.Intn(delta))
+		delay := c.receiveDelay.Min + time.Duration(rand.Intn(delta))
 		time.Sleep(delay)
 	}
 }
