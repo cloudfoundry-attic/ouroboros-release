@@ -1,7 +1,7 @@
-package connectionmanager_test
+package v1_test
 
 import (
-	"volley/connectionmanager"
+	"volley/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("AppIDStore", func() {
 	It("returns an app ID weighted on the number of times it has been added", func() {
-		store := connectionmanager.NewIDStore(3)
+		store := v1.NewIDStore(3)
 		store.Add("some-id")
 		store.Add("some-id")
 		store.Add("some-more-id")
@@ -28,7 +28,7 @@ var _ = Describe("AppIDStore", func() {
 	})
 
 	It("blocks until it is full", func() {
-		store := connectionmanager.NewIDStore(3)
+		store := v1.NewIDStore(3)
 		store.Add("some-id")
 		store.Add("some-id")
 

@@ -16,7 +16,7 @@ import (
 
 	"volley/app"
 	"volley/config"
-	"volley/connectionmanager"
+	"volley/v1"
 )
 
 func init() {
@@ -30,7 +30,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	idStore := connectionmanager.NewIDStore(config.StreamCount)
+	idStore := v1.NewIDStore(config.StreamCount)
 
 	udpEmitter, err := emitter.NewUdpEmitter(fmt.Sprintf("127.0.0.1:%d", config.MetronPort))
 	if err != nil {

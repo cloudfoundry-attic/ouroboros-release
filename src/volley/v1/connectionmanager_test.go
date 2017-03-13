@@ -1,4 +1,4 @@
-package connectionmanager_test
+package v1_test
 
 import (
 	"conf"
@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"time"
-	"volley/connectionmanager"
+	"volley/v1"
 
 	. "github.com/apoydence/eachers"
 	"github.com/apoydence/eachers/testhelpers"
@@ -31,7 +31,7 @@ var _ = Describe("Connection", func() {
 		mockBatcher *mockBatcher
 		mockChainer *mockBatchCounterChainer
 		mockIDStore *mockAppIDStore
-		conn        *connectionmanager.ConnectionManager
+		conn        *v1.ConnectionManager
 	)
 
 	BeforeEach(func() {
@@ -45,7 +45,7 @@ var _ = Describe("Connection", func() {
 		testhelpers.AlwaysReturn(mockBatcher.BatchCounterOutput, mockChainer)
 		testhelpers.AlwaysReturn(mockChainer.SetTagOutput, mockChainer)
 
-		conn = connectionmanager.New(
+		conn = v1.New(
 			[]string{strings.Replace(server.URL, "http", "ws", 1)},
 			"some-auth",
 			"some-sub-id",
@@ -132,7 +132,7 @@ var _ = Describe("Connection", func() {
 		})
 
 		It("is a slow consumer when delay is set", func() {
-			slowConn := connectionmanager.New(
+			slowConn := v1.New(
 				[]string{strings.Replace(server.URL, "http", "ws", 1)},
 				"some-auth",
 				"some-sub-id",
@@ -310,7 +310,7 @@ var _ = Describe("Connection", func() {
 		})
 
 		It("is a slow consumer when delay is set", func() {
-			slowConn := connectionmanager.New(
+			slowConn := v1.New(
 				[]string{strings.Replace(server.URL, "http", "ws", 1)},
 				"some-auth",
 				"some-sub-id",

@@ -4,7 +4,7 @@ import (
 	"conf"
 	"math/rand"
 	"time"
-	"volley/connectionmanager"
+	"volley/v1"
 )
 
 type EgressV1 struct {
@@ -17,8 +17,8 @@ type EgressV1 struct {
 	subscriptionID       string
 	receiveDelay         conf.DurationRange
 	asyncRequestDelay    conf.DurationRange
-	idStore              connectionmanager.AppIDStore
-	batcher              connectionmanager.Batcher
+	idStore              v1.AppIDStore
+	batcher              v1.Batcher
 }
 
 func NewEgressV1(
@@ -31,8 +31,8 @@ func NewEgressV1(
 	subscriptionID string,
 	receiveDelay conf.DurationRange,
 	asyncRequestDelay conf.DurationRange,
-	idStore connectionmanager.AppIDStore,
-	batcher connectionmanager.Batcher,
+	idStore v1.AppIDStore,
+	batcher v1.Batcher,
 ) *EgressV1 {
 	return &EgressV1{
 		firehoseCount:        firehoseCount,
@@ -50,7 +50,7 @@ func NewEgressV1(
 }
 
 func (e EgressV1) Start() {
-	conn := connectionmanager.New(
+	conn := v1.New(
 		e.tcAddrs,
 		e.authToken,
 		e.subscriptionID,

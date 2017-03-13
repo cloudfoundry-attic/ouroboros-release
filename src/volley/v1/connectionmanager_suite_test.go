@@ -1,6 +1,6 @@
 //go:generate hel
 
-package connectionmanager_test
+package v1_test
 
 import (
 	"io/ioutil"

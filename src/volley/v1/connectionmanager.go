@@ -1,4 +1,4 @@
-package connectionmanager
+package v1
 
 import (
 	"conf"
