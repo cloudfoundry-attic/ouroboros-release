@@ -31,7 +31,7 @@ var _ = Describe("ConnectionManager", func() {
 			addrs = append(addrs, addr)
 			spies = append(spies, spy)
 		}
-		c = v2.NewConnectionManager(addrs, conf.DurationRange{}, batcher)
+		c = v2.NewConnectionManager(addrs, conf.DurationRange{}, batcher, grpc.WithInsecure())
 	})
 
 	It("connects to RLP with the given filter", func() {

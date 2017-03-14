@@ -25,6 +25,9 @@ type Config struct {
 	ReceiveDelay         conf.DurationRange `env:"RECV_DELAY"`
 	AsyncRequestDelay    conf.DurationRange `env:"ASYNC_REQUEST_DELAY"`
 	KillDelay            conf.DurationRange `env:"KILL_DELAY"`
+	TLSCertPath          string             `env:"V2_TLS_CERT_PATH"`
+	TLSKeyPath           string             `env:"V2_TLS_KEY_PATH"`
+	TLSCAPath            string             `env:"V2_TLS_CA_PATH"`
 }
 
 func Load() (Config, error) {

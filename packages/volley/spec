@@ -46,6 +46,7 @@ files:
 - google.golang.org/grpc/tap/*.go # gosub
 - google.golang.org/grpc/transport/*.go # gosub
 - loggregator/v2/*.go # gosub
+- tls/*.go # gosub
 - volley/*.go # gosub
 - volley/app/*.go # gosub
 - volley/config/*.go # gosub

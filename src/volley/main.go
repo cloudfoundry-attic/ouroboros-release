@@ -8,6 +8,10 @@ import (
 	"os"
 	"syscall"
 	"time"
+	"tls"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/cloudfoundry/dropsonde/emitter"
 	"github.com/cloudfoundry/dropsonde/metric_sender"
@@ -58,10 +62,16 @@ func main() {
 	)
 	go egressV1.Start()
 
+	tlsConfig, err := tls.NewMutualTLSConfig(config.TLSCertPath, config.TLSKeyPath, config.TLSCAPath, "reverselogproxy")
+	if err != nil {
+		log.Panic(err)
+	}
+
 	v2ConnManager := v2.NewConnectionManager(
 		config.RLPAddresses,
 		config.ReceiveDelay,
 		metricBatcher,
+		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
 	)
 	egressV2 := app.NewEgressV2(
 		v2ConnManager,

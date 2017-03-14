@@ -1,7 +1,10 @@
 ---
 name: volley
 templates:
+  ca.crt.erb: certs/ca.crt
   volley_ctl.erb: bin/volley_ctl
+  volley_rlp.crt.erb: certs/volley_rlp.crt
+  volley_rlp.key.erb: certs/volley_rlp.key
 
 packages:
 - common
@@ -41,6 +44,13 @@ properties:
   volley.metric_batch_interval:
     description: "The interval for metric batching"
     default: "5s"
+
+  loggregator.tls.ca:
+    description: "The TLS CA for RLP"
+  volley.rlp.tls.cert:
+    description: "The TLS cert for the rlp server"
+  volley.rlp.tls.key:
+    description: "The TLS private key for the rlp server"
 
   syslogr.ips:
     description: "The syslogr IPs"

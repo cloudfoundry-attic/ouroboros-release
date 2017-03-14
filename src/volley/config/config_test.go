@@ -183,6 +183,9 @@ var _ = Describe("Config", func() {
 				"KILL_DELAY":             "10us-100ms",
 				"METRON_PORT":            "12345",
 				"METRIC_BATCH_INTERVAL":  "100ms",
+				"V2_TLS_CERT_PATH":       "pathA",
+				"V2_TLS_KEY_PATH":        "pathB",
+				"V2_TLS_CA_PATH":         "pathC",
 			}, func() {
 
 				c, err := config.Load()
@@ -200,6 +203,9 @@ var _ = Describe("Config", func() {
 				Expect(c.KillDelay.Max).To(Equal(100 * time.Millisecond))
 				Expect(c.MetronPort).To(Equal(12345))
 				Expect(c.MetricBatchInterval).To(Equal(100 * time.Millisecond))
+				Expect(c.TLSCertPath).To(Equal("pathA"))
+				Expect(c.TLSKeyPath).To(Equal("pathB"))
+				Expect(c.TLSCAPath).To(Equal("pathC"))
 			})
 		})
 	})

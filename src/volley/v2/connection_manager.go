@@ -21,23 +21,26 @@ type ConnectionManager struct {
 	addrs        []string
 	receiveDelay conf.DurationRange
 	batcher      Batcher
+	dialOpts     []grpc.DialOption
 }
 
 func NewConnectionManager(
 	addrs []string,
 	receiveDelay conf.DurationRange,
 	batcher Batcher,
+	dialOpts ...grpc.DialOption,
 ) *ConnectionManager {
 	return &ConnectionManager{
 		addrs:        addrs,
 		receiveDelay: receiveDelay,
 		batcher:      batcher,
+		dialOpts:     dialOpts,
 	}
 }
 
 func (m *ConnectionManager) Assault(filter *loggregator.Filter) {
 	addr := m.addrs[rand.Intn(len(m.addrs))]
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, m.dialOpts...)
 	if err != nil {
 		log.Fatalf("did not connect: %s", err)
 	}
