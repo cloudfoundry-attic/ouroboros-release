@@ -22,6 +22,7 @@ end
 
 %>
 
+CERT_DIR=/var/vcap/jobs/volley/certs
 RUN_DIR=/var/vcap/sys/run/volley
 LOG_DIR=/var/vcap/sys/log/volley
 PIDFILE=$RUN_DIR/volley.pid
@@ -64,9 +65,9 @@ case $1 in
     export SYSLOG_TTL="<%= p("volley.syslog_ttl") %>"
     export METRON_PORT="<%= p("metron_agent.listening_port") %>"
     export METRIC_BATCH_INTERVAL="<%= p("volley.metric_batch_interval") %>"
-    export V2_TLS_CERT_PATH="$RUN_DIR/certs/volley_rlp.cert"
-    export V2_TLS_KEY_PATH="$RUN_DIR/certs/volley_rlp.key"
-    export V2_TLS_CA_PATH="$RUN_DIR/certs/ca.crt"
+    export V2_TLS_CERT_PATH="$CERT_DIR/certs/volley_rlp.cert"
+    export V2_TLS_KEY_PATH="$CERT_DIR/certs/volley_rlp.key"
+    export V2_TLS_CA_PATH="$CERT_DIR/certs/ca.crt"
 
     chpst -u vcap:vcap /var/vcap/packages/volley/bin/volley &
 
