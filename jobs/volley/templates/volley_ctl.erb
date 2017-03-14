@@ -5,6 +5,10 @@ tc_addrs = p("trafficcontroller.ips").map do |addr|
   "ws://#{addr}:#{p("trafficcontroller.outgoing_dropsonde_port")}"
 end
 
+rlp_addrs = p("reverselogproxy.ips").map do |addr|
+    "#{addr}:#{p("reverselogproxy.port")}"
+end
+
 etcd_addrs = p("etcd.machines").map do |addr|
     "http://#{addr}:4001"
 end
@@ -44,6 +48,7 @@ case $1 in
     chown -R vcap:vcap $LOG_DIR
 
     export TC_ADDRS="<%= tc_addrs.join(",") %>"
+    export RLP_ADDRS="<%= rlp_addrs.join(",") %>"
     export AUTH_TOKEN="<%= p("volley.auth_token") %>"
     export FIREHOSE_COUNT="<%= p("volley.firehose_count") %>"
     export STREAM_COUNT="<%= p("volley.stream_count") %>"

@@ -10,6 +10,7 @@ import (
 type Config struct {
 	TCAddresses          []string           `env:"TC_ADDRS,required"`
 	MetronPort           int                `env:"METRON_PORT,required"`
+	RLPAddresses         []string           `env:"RLP_ADDRS,required"`
 	MetricBatchInterval  time.Duration      `env:"METRIC_BATCH_INTERVAL"`
 	ETCDAddresses        []string           `env:"ETCD_ADDRS"`
 	SyslogAddresses      []string           `env:"SYSLOG_ADDRS"`

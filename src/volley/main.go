@@ -17,6 +17,7 @@ import (
 	"volley/app"
 	"volley/config"
 	"volley/v1"
+	"volley/v2"
 )
 
 func init() {
@@ -56,6 +57,20 @@ func main() {
 		metricBatcher,
 	)
 	go egressV1.Start()
+
+	v2ConnManager := v2.NewConnectionManager(
+		config.RLPAddresses,
+		config.ReceiveDelay,
+		metricBatcher,
+	)
+	egressV2 := app.NewEgressV2(
+		v2ConnManager,
+		idStore,
+		config.FirehoseCount,
+		config.StreamCount,
+		config.StreamCount,
+	)
+	go egressV2.Start()
 
 	killer := app.NewKiller(
 		config.KillDelay,

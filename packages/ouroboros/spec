@@ -35,10 +35,10 @@ files:
 - google.golang.org/grpc/stats/*.go # gosub
 - google.golang.org/grpc/tap/*.go # gosub
 - google.golang.org/grpc/transport/*.go # gosub
+- loggregator/v2/*.go # gosub
 - ouroboros/*.go # gosub
 - ouroboros/internal/api/*.go # gosub
 - ouroboros/internal/converter/*.go # gosub
 - ouroboros/internal/egress/v1/*.go # gosub
 - ouroboros/internal/egress/v2/*.go # gosub
 - ouroboros/internal/ingress/*.go # gosub
-- ouroboros/internal/loggregator/v2/*.go # gosub

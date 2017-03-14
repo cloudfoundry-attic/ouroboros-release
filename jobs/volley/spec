@@ -55,6 +55,12 @@ properties:
     description: "The port to connect to traffic controller"
     default: 8081
 
+  reverselogproxy.ips:
+    description: "The RLP IPs"
+  reverselogproxy.port:
+    description: "The port to connect to RLP's grpc endpoint"
+    port: 8082
+
   etcd.machines:
     description: "The addresses of etcd's nodes"
 
