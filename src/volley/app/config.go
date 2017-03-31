@@ -1,4 +1,4 @@
-package config
+package app
 
 import (
 	"conf"
@@ -30,7 +30,7 @@ type Config struct {
 	TLSCAPath            string             `env:"V2_TLS_CA_PATH"`
 }
 
-func Load() (Config, error) {
+func LoadConfig() (Config, error) {
 	var c Config
 	c.MetricBatchInterval = 5 * time.Second
 	err := envstruct.Load(&c)

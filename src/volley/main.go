@@ -19,7 +19,6 @@ import (
 	"github.com/cloudfoundry/dropsonde/metrics"
 
 	"volley/app"
-	"volley/config"
 	"volley/v1"
 	"volley/v2"
 )
@@ -31,7 +30,7 @@ func init() {
 func main() {
 	log.Println("Volley started...")
 	defer log.Println("Volley closing")
-	config, err := config.Load()
+	config, err := app.LoadConfig()
 	if err != nil {
 		log.Panic(err)
 	}
