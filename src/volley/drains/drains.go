@@ -22,7 +22,7 @@ type ETCDSetter interface {
 // AdvertiseRandom advertises a random drain URL for the first app ID
 // returned from ids.
 func AdvertiseRandom(ids IDGetter, etcd ETCDSetter, drains []string, ttl time.Duration) {
-	drain := drains[rand.Intn(len(drains))]
+	drain := drains[rand.Intn(int(len(drains)))]
 	drainHash := sha1.Sum([]byte(drain))
 	id := ids.Get()
 	key := path.Join("/loggregator", "services", id, string(drainHash[:]))

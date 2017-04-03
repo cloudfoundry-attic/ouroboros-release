@@ -34,7 +34,7 @@ func (h *CUPSHandler) newResponse() map[string]interface{} {
 	bindings := make(map[string]interface{})
 
 	for i := 0; i < h.drainCount; i++ {
-		drain := h.drains[rand.Intn(len(h.drains))]
+		drain := h.drains[rand.Intn(int(len(h.drains)))]
 
 		bindings[h.idGetter.Get()] = map[string]interface{}{
 			"drains": []string{
