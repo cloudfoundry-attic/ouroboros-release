@@ -70,10 +70,10 @@ case $1 in
     export V2_TLS_CA_PATH="$CERT_DIR/ca.crt"
 
     export CUPS_PORT="<%= p('volley.cups.port') %>"
-	export CUPS_SERVER_CN="<%= p('volley.cups.tls.common_name') %>"
-	export CUPS_SERVER_CERT="$CERT_DIR/cups_server.crt"
-	export CUPS_SERVER_KEY="$CERT_DIR/cups_server.key"
-	export CUPS_SERVER_CA="$CERT_DIR/cups_ca.crt"
+    export CUPS_SERVER_CN="<%= p('volley.cups.tls.common_name') %>"
+    export CUPS_SERVER_CERT="$CERT_DIR/cups_server.crt"
+    export CUPS_SERVER_KEY="$CERT_DIR/cups_server.key"
+    export CUPS_SERVER_CA="$CERT_DIR/cups_ca.crt"
 
     chpst -u vcap:vcap /var/vcap/packages/volley/bin/volley &
 

@@ -14,7 +14,7 @@ import (
 var _ = Describe("Handler", func() {
 	It("returns a drain bindings", func() {
 		store := &SpyAppIDStore{}
-		handler := cups.NewCUPSHandler(store, []string{"drain-host.local"}, 3)
+		handler := cups.NewCUPSHandler(store, []string{"syslog://drain-host.local"}, 3)
 		rw := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
 

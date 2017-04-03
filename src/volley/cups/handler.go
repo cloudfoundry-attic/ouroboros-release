@@ -38,7 +38,7 @@ func (h *CUPSHandler) newResponse() map[string]interface{} {
 
 		bindings[h.idGetter.Get()] = map[string]interface{}{
 			"drains": []string{
-				fmt.Sprint("syslog://", drain, "/?drain-version=2.0"),
+				fmt.Sprint(drain, "/?drain-version=2.0"),
 			},
 			"hostname": "org.space.appname",
 		}
