@@ -15,9 +15,9 @@ import (
 )
 
 type Config struct {
-	Port       int                `env:"port"`
-	Delay      conf.DurationRange `env:"delay"`
-	MetronPort int                `env:"metron_port"`
+	Port       int                `env:"PORT"`
+	Delay      conf.DurationRange `env:"DELAY"`
+	MetronPort int                `env:"METRON_PORT"`
 }
 
 func main() {
