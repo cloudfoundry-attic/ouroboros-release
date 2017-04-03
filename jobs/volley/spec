@@ -24,7 +24,7 @@ properties:
   volley.container_metric_count:
     description: "Number of ContainerMetric connections to open. AppID must be set"
   volley.syslog_drains:
-    description: "Number of syslog drains to advertise in etcd"
+    description: "Number of syslog drains to advertise in etcd and CUPS"
     default: 0
   volley.syslog_ttl:
     description: "The TTL value (in duration format) to use for syslog drains"
