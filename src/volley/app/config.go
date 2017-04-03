@@ -8,9 +8,9 @@ import (
 )
 
 type Config struct {
-	TCAddresses          []string           `env:"TC_ADDRS,required"`
-	MetronPort           int                `env:"METRON_PORT,required"`
-	RLPAddresses         []string           `env:"RLP_ADDRS,required"`
+	TCAddresses          []string           `env:"TC_ADDRS,           required"`
+	MetronPort           int                `env:"METRON_PORT,        required"`
+	RLPAddresses         []string           `env:"RLP_ADDRS,          required"`
 	MetricBatchInterval  time.Duration      `env:"METRIC_BATCH_INTERVAL"`
 	ETCDAddresses        []string           `env:"ETCD_ADDRS"`
 	SyslogAddresses      []string           `env:"SYSLOG_ADDRS"`
@@ -28,6 +28,12 @@ type Config struct {
 	TLSCertPath          string             `env:"V2_TLS_CERT_PATH"`
 	TLSKeyPath           string             `env:"V2_TLS_KEY_PATH"`
 	TLSCAPath            string             `env:"V2_TLS_CA_PATH"`
+
+	CUPSPort       int16  `env:"CUPS_PORT,        required"`
+	CUPSServerCert string `env:"CUPS_SERVER_CERT, required"`
+	CUPSServerKey  string `env:"CUPS_SERVER_KEY,  required"`
+	CUPSServerCA   string `env:"CUPS_SERVER_CA,   required"`
+	CUPSServerCN   string `env:"CUPS_SERVER_CN,   required"`
 }
 
 func LoadConfig() (Config, error) {

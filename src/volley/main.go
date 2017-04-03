@@ -19,6 +19,7 @@ import (
 	"github.com/cloudfoundry/dropsonde/metrics"
 
 	"volley/app"
+	"volley/cups"
 	"volley/v1"
 	"volley/v2"
 )
@@ -45,6 +46,24 @@ func main() {
 	metricSender := metric_sender.NewMetricSender(eventEmitter)
 	metricBatcher := metricbatcher.New(metricSender, config.MetricBatchInterval)
 	metrics.Initialize(metricSender, metricBatcher)
+
+	cupsTLS, err := tls.NewMutualTLSConfig(
+		config.CUPSServerCert,
+		config.CUPSServerKey,
+		config.CUPSServerCA,
+		config.CUPSServerCN,
+	)
+	if err != nil {
+		log.Printf("Failed to load CUPS TLS config: %s", err)
+	}
+
+	go cups.ListenAndServe(
+		cupsTLS,
+		config.CUPSPort,
+		idStore,
+		config.SyslogAddresses,
+		config.SyslogDrains,
+	)
 
 	egressV1 := app.NewEgressV1(
 		config.FirehoseCount,

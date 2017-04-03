@@ -5,6 +5,9 @@ templates:
   volley_ctl.erb: bin/volley_ctl
   volley_rlp.crt.erb: certs/volley_rlp.crt
   volley_rlp.key.erb: certs/volley_rlp.key
+  cups_ca.crt.erb: certs/cups_ca.crt
+  cups_server.crt.erb: certs/cups_server.crt
+  cups_server.key.erb: certs/cups_server.key
 
 packages:
 - common
@@ -44,6 +47,18 @@ properties:
   volley.metric_batch_interval:
     description: "The interval for metric batching"
     default: "5s"
+
+  volley.cups.port:
+    description: "The port for Volley to listen on to act as the CUPS provider for scalable syslog."
+    default: 8088
+  volley.cups.tls.ca:
+    description: "The CA cert for CUPS"
+  volley.cups.tls.cert:
+    description: "The server cert for CUPS"
+  volley.cups.tls.key:
+    description: "The server key for CUPS"
+  volley.cups.tls.common_name:
+    description: "The common name for CUPS"
 
   loggregator.tls.ca:
     description: "The TLS CA for RLP"

@@ -69,6 +69,12 @@ case $1 in
     export V2_TLS_KEY_PATH="$CERT_DIR/volley_rlp.key"
     export V2_TLS_CA_PATH="$CERT_DIR/ca.crt"
 
+    export CUPSPort="<%= p('volley.cups.port') %>"
+	export CUPSServerCN="<%= p('volley.cups.tls.common_name') %>"
+	export CUPSServerCert="$CERT_DIR/cups_server.crt"
+	export CUPSServerKey="$CERT_DIR/cups_server.key"
+	export CUPSServerCA="$CERT_DIR/cups_ca.crt"
+
     chpst -u vcap:vcap /var/vcap/packages/volley/bin/volley &
 
     echo $! > $PIDFILE
