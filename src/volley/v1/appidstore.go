@@ -49,7 +49,9 @@ func (i *IDStore) GetN(n int) []string {
 
 	uniqueIDs := map[string]struct{}{}
 	for len(uniqueIDs) < n {
-		uniqueIDs[i.Get()] = struct{}{}
+		idx := rand.Intn(n)
+		v := (*string)(atomic.LoadPointer(&i.ids[idx]))
+		uniqueIDs[*v] = struct{}{}
 	}
 
 	ids := make([]string, 0, len(uniqueIDs))
