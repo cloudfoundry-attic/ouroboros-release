@@ -1,52 +1,155 @@
----
-meta: (( merge ))
+name: ouroboros
 
-name: (( merge ))
-director_uuid: (( merge ))
+stemcells:
+- alias: default
+  os: ubuntu-trusty
+  version: latest
+
 releases:
   - name: ouroboros
     version: latest
+  - name: consul
+    version: latest
+  - name: loggregator
+    version: latest
 
-compilation:
-  workers: (( merge ))
-  network: ouroboros-net
-  reuse_compilation_vms: true
-  cloud_properties: (( merge ))
+instance_groups:
+- name: ouroboros
+  instances: 1
+  azs:
+  - z1
+  vm_type: default
+  persistent_disk_type: default
+  stemcell: default
+  networks:
+  - name: default
+  jobs:
+  - name: consul_agent
+    release: consul
+    consumes:
+      consul: {from: consul_server, deployment: cf}
+  - name: metron_agent
+    release: loggregator
+    properties: &metron_agent_properties
+      metron_agent:
+        deployment: some-domain
+      metron_endpoint:
+        shared_secret: some-secret
+      loggregator:
+        tls:
+          ca_cert: "((loggregator_tls_metron.ca))"
+          metron:
+            cert: "((loggregator_tls_metron.certificate))"
+            key: "((loggregator_tls_metron.private_key))"
+  - name: ouroboros
+    release: ouroboros
+    properties:
+      loggregator:
+        egress_addr: ws://loggregator-trafficcontroller.service.cf.internal:8081
+        ingress_version: 1
+        tls:
+          ca: ((loggregator_ca.ca))
+          cn: ouroboros
+      uaa:
+        addr: https://uaa.service.cf.internal:8443
+        client_id: some-uaa-client
+        client_secret: some-uaa-secret
+      ouroboros:
+        subscription_id: some-subscription-id
+        tls:
+          cert: ((ouroboros.certificate))
+          key: ((ouroboros.private_key))
+
+- name: volley
+  instances: 1
+  azs:
+  - z1
+  vm_type: default
+  persistent_disk_type: default
+  stemcell: default
+  networks:
+  - name: default
+  jobs:
+    - name: volley
+      release: ouroboros
+      properties:
+        etcd:
+          machines: []
+        trafficcontroller:
+          ips: []
+        reverselogproxy:
+          ips: []
+        loggregator:
+          tls:
+            ca: ((loggregator_ca.ca))
+        volley:
+          stream_count: 0
+          container_metric_count: 0
+          recent_log_count: 0
+          rlp:
+            tls:
+              cert: ((volley.certificate))
+              key: ((volley.private_key))
+          cups:
+            tls:
+              ca: ((loggregator_ca.ca))
+              cert: ((volley.certificate))
+              key: ((volley.private_key))
+              common_name: volley
+
+variables:
+- name: loggregator_ca
+  type: certificate
+  options:
+    common_name: loggregatorCA
+    is_ca: true
+- name: loggregator_tls_metron
+  type: certificate
+  options:
+    ca: loggregator_ca
+    common_name: metron
+    extended_key_usage:
+    - client_auth
+    - server_auth
+
+- name: ouroboros
+  type: certificate
+  options:
+    ca: loggregator_ca
+    common_name: ouroboros
+    extended_key_usage:
+    - client_auth
+    - server_auth
+
+- name: volley
+  type: certificate
+  options:
+    ca: loggregator_ca
+    common_name: volley
+    extended_key_usage:
+    - client_auth
+    - server_auth
+
+- name: consul_agent_ca
+  type: certificate
+  options:
+    is_ca: true
+    common_name: consulCA
+- name: consul_agent
+  type: certificate
+  options:
+    ca: consul_agent_ca
+    common_name: consul_agent
+    extended_key_usage:
+    - client_auth
+    - server_auth
+    alternative_names:
+    - 127.0.0.1
 
 update:
   canaries: 1
   canary_watch_time: 30000-100000
   update_watch_time: 30000-100000
-  max_in_flight: 1
+  max_in_flight: 50
   max_errors: 1
 
-networks:
-- name: ouroboros-net
-  subnets: (( merge ))
-
-resource_pools:
-- name: ouroboros
-  network: ouroboros-net
-  stemcell: (( meta.stemcell ))
-  cloud_properties: (( merge ))
-
-jobs:
-- name: ouroboros
-  memory_mb: 2048
-  templates:
-    - {name: ouroboros, release: ouroboros}
-  instances: (( merge ))
-  resource_pool: ouroboros
-  networks: (( merge ))
-
-properties:
-  loggregator:
-    traffic_controller_url: (( merge ))
-  uaa:
-    url: (( merge ))
-    client_id: (( merge ))
-    client_secret: (( merge ))
-  metron:
-    listening_port: (( merge ))
-  ouroboros:
-    subscription_id: (( merge ))

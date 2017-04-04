@@ -1,0 +1,6 @@
+#!/bin/bash
+
+bosh -e coconut -d ouroboros deploy ~/workspace/ouroboros-release/templates/ouroboros-template.yml \
+	--ops-file ~/workspace/deployments-loggregator/gcp/coconut/ouroboros-ops.yml \
+	--vars-file ~/workspace/deployments-loggregator/gcp/bbl/deployment-vars.yml \
+	--vars-store ~/workspace/deployments-loggregator/gcp/coconut/ouroboros-vars.yml
