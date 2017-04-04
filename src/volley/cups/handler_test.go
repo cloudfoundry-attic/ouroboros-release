@@ -47,8 +47,12 @@ type SpyAppIDStore struct {
 	getCount int
 }
 
-func (s *SpyAppIDStore) Get() string {
-	s.getCount++
+func (s *SpyAppIDStore) GetN(n int) []string {
+	ids := make([]string, 0, n)
 
-	return fmt.Sprint("app-id-", s.getCount)
+	for i := 0; i < n; i++ {
+		ids = append(ids, fmt.Sprint("app-id-", i+1))
+	}
+
+	return ids
 }

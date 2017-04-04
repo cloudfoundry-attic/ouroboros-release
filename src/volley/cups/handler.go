@@ -8,7 +8,7 @@ import (
 )
 
 type idGetter interface {
-	Get() (id string)
+	GetN(n int) (id []string)
 }
 
 type CUPSHandler struct {
@@ -33,10 +33,12 @@ func (h *CUPSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *CUPSHandler) newResponse() map[string]interface{} {
 	bindings := make(map[string]interface{})
 
-	for i := 0; i < h.drainCount; i++ {
-		drain := h.drains[rand.Intn(int(len(h.drains)))]
+	appIDs := h.idGetter.GetN(h.drainCount)
 
-		bindings[h.idGetter.Get()] = map[string]interface{}{
+	for _, id := range appIDs {
+		drain := h.drains[rand.Intn(len(h.drains))]
+
+		bindings[id] = map[string]interface{}{
 			"drains": []string{
 				fmt.Sprint(drain, "/?drain-version=2.0"),
 			},

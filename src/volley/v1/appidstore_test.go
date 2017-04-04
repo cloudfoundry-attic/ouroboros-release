@@ -44,4 +44,26 @@ var _ = Describe("AppIDStore", func() {
 		store.Add("some-more-id")
 		Eventually(done).Should(BeClosed())
 	})
+
+	It("can get multiple unique values", func() {
+		store := v1.NewIDStore(3)
+		store.Add("some-id-1")
+		store.Add("some-id-2")
+		store.Add("some-id-3")
+
+		Expect(store.GetN(3)).To(ConsistOf(
+			"some-id-1",
+			"some-id-2",
+			"some-id-3",
+		))
+	})
+
+	It("does not return empty keys requesting more then are available", func() {
+		store := v1.NewIDStore(1)
+		store.Add("some-id-1")
+
+		Expect(store.GetN(3)).To(ConsistOf(
+			"some-id-1",
+		))
+	})
 })

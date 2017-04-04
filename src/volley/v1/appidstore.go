@@ -40,3 +40,22 @@ func (i *IDStore) Get() string {
 	v := (*string)(atomic.LoadPointer(&i.ids[idx]))
 	return *v
 }
+
+func (i *IDStore) GetN(n int) []string {
+	wid := atomic.LoadInt64(&i.writeIDX)
+	if int64(n) > wid+1 {
+		n = int(wid + 1)
+	}
+
+	uniqueIDs := map[string]struct{}{}
+	for len(uniqueIDs) < n {
+		uniqueIDs[i.Get()] = struct{}{}
+	}
+
+	ids := make([]string, 0, len(uniqueIDs))
+	for k, _ := range uniqueIDs {
+		ids = append(ids, k)
+	}
+
+	return ids
+}

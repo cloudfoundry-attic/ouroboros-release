@@ -3,7 +3,6 @@
 package v1_test
 
 import (
-	"io/ioutil"
 	"log"
 
 	. "github.com/onsi/ginkgo"
@@ -18,5 +17,7 @@ func TestConnection(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	log.SetOutput(ioutil.Discard)
+	if !testing.Verbose() {
+		log.SetOutput(GinkgoWriter)
+	}
 })
