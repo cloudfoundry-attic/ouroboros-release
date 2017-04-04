@@ -8,3 +8,4 @@
 /dev_releases
 /config/private.yml
 /config/dev.yml
+*.swp
