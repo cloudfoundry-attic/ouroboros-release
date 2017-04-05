@@ -8,6 +8,7 @@ templates:
   cups_ca.crt.erb: certs/cups_ca.crt
   cups_server.crt.erb: certs/cups_server.crt
   cups_server.key.erb: certs/cups_server.key
+  dns_health_check.erb: bin/dns_health_check
 
 packages:
 - common
