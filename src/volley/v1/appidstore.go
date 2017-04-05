@@ -43,6 +43,10 @@ func (i *IDStore) Get() string {
 
 func (i *IDStore) GetN(n int) []string {
 	wid := atomic.LoadInt64(&i.writeIDX)
+
+	if wid >= int64(len(i.ids)) {
+		wid = int64(len(i.ids) - 1)
+	}
 	if int64(n) > wid+1 {
 		n = int(wid + 1)
 	}
