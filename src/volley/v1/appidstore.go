@@ -51,17 +51,17 @@ func (i *IDStore) GetN(n int) []string {
 		n = int(wid + 1)
 	}
 
-	uniqueIDs := map[string]struct{}{}
-	for len(uniqueIDs) < n {
-		idx := rand.Intn(n)
-		v := (*string)(atomic.LoadPointer(&i.ids[idx]))
-		uniqueIDs[*v] = struct{}{}
+	ids := make([]string, n)
+	for j := 0; j < n; j++ {
+		ids[j] = *(*string)(atomic.LoadPointer(&i.ids[j]))
 	}
-
-	ids := make([]string, 0, len(uniqueIDs))
-	for k, _ := range uniqueIDs {
-		ids = append(ids, k)
-	}
-
+	shuffle(ids)
 	return ids
+}
+
+func shuffle(a []string) {
+	for i := range a {
+		j := rand.Intn(i + 1)
+		a[i], a[j] = a[j], a[i]
+	}
 }
