@@ -3,7 +3,9 @@ package main
 import (
 	"conf"
 	"fmt"
+	"log"
 	"net"
+	"net/http"
 	"syslogr/conns"
 	"syslogr/ranger"
 	"time"
@@ -16,8 +18,11 @@ import (
 
 type Config struct {
 	Port       int                `env:"PORT"`
+	HTTPSPort  int                `env:"HTTPS_PORT"`
 	Delay      conf.DurationRange `env:"DELAY"`
 	MetronPort int                `env:"METRON_PORT"`
+	Cert       string             `env:"CERT"`
+	Key        string             `env:"KEY"`
 }
 
 func main() {
@@ -32,7 +37,8 @@ func main() {
 		panic(err)
 	}
 
-	serviceSyslog(conf.Port, ranger, batcher)
+	go serviceSyslog(conf.Port, ranger, batcher)
+	serviceHTTPS(conf.HTTPSPort, conf.Cert, conf.Key)
 }
 
 func metricBatcher(port int) *metricbatcher.MetricBatcher {
@@ -46,7 +52,9 @@ func metricBatcher(port int) *metricbatcher.MetricBatcher {
 }
 
 func serviceSyslog(port int, r *ranger.Ranger, b *metricbatcher.MetricBatcher) {
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	addr := fmt.Sprintf("localhost:%d", port)
+	log.Printf("listening for tcp on: %s", addr)
+	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
 	}
@@ -59,4 +67,13 @@ func serviceSyslog(port int, r *ranger.Ranger, b *metricbatcher.MetricBatcher) {
 		}
 		go conns.Handle(conn, r, b)
 	}
+}
+
+func serviceHTTPS(port int, cert, key string) {
+	addr := fmt.Sprintf("localhost:%d", port)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	log.Printf("listening for https on: %s", addr)
+	log.Fatal(http.ListenAndServeTLS(addr, cert, key, handler))
 }
