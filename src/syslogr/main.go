@@ -2,8 +2,8 @@ package main
 
 import (
 	"conf"
+	"fmt"
 	"net"
-	"strconv"
 	"syslogr/conns"
 	"syslogr/ranger"
 	"time"
@@ -25,35 +25,38 @@ func main() {
 	if err := envstruct.Load(&conf); err != nil {
 		panic(err)
 	}
-	l, err := net.Listen("tcp", ":"+strconv.Itoa(conf.Port))
-	if err != nil {
-		panic(err)
-	}
-	defer l.Close()
+
+	batcher := metricBatcher(conf.MetronPort)
 	ranger, err := ranger.New(conf.Delay.Min, conf.Delay.Max)
 	if err != nil {
 		panic(err)
 	}
-	e, err := emitter.NewUdpEmitter(":" + strconv.Itoa(conf.MetronPort))
+
+	serviceSyslog(conf.Port, ranger, batcher)
+}
+
+func metricBatcher(port int) *metricbatcher.MetricBatcher {
+	udpEmitter, err := emitter.NewUdpEmitter(fmt.Sprintf(":%d", port))
 	if err != nil {
 		panic(err)
 	}
-	sender := metric_sender.NewMetricSender(emitter.NewEventEmitter(e, "syslogr"))
-	batcher := metricbatcher.New(sender, time.Second)
+	eventEmitter := emitter.NewEventEmitter(udpEmitter, "syslogr")
+	sender := metric_sender.NewMetricSender(eventEmitter)
+	return metricbatcher.New(sender, time.Second)
+}
+
+func serviceSyslog(port int, r *ranger.Ranger, b *metricbatcher.MetricBatcher) {
+	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		panic(err)
+	}
+	defer l.Close()
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			panic(err)
 		}
-
-		go conns.Handle(conn, ranger, batcher)
-	}
-
-}
-
-func handleConn(conn net.Conn) {
-	buf := make([]byte, 1024)
-	for {
-		conn.Read(buf)
+		go conns.Handle(conn, r, b)
 	}
 }
