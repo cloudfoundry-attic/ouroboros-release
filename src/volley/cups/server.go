@@ -11,10 +11,10 @@ func ListenAndServe(
 	tlsConfig *tls.Config,
 	port int16,
 	idGetter idGetter,
-	drains []string,
+	drainURLs []string,
 	drainCount int,
 ) {
-	handler := NewCUPSHandler(idGetter, drains, drainCount)
+	handler := NewCUPSHandler(idGetter, drainURLs, drainCount)
 
 	l, err := tls.Listen("tcp", fmt.Sprintf(":%d", port), tlsConfig)
 	if err != nil {

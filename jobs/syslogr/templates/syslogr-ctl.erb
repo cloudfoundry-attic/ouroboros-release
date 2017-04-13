@@ -22,6 +22,7 @@ case $1 in
         2>>$LOG_DIR/syslogr.stderr.log
 
     export PORT='<%= p("syslogr.port") %>'
+    export HTTPS_PORT='<%= p("syslogr.https_port") %>'
     export DELAY='<%= p("syslogr.delay") %>'
     export METRON_PORT='<%= p("metron_agent.listening_port") %>'
 

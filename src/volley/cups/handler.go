@@ -13,12 +13,16 @@ type idGetter interface {
 
 type CUPSHandler struct {
 	idGetter   idGetter
-	drains     []string
+	drainURLs  []string
 	drainCount int
 }
 
-func NewCUPSHandler(i idGetter, drains []string, drainCount int) *CUPSHandler {
-	return &CUPSHandler{idGetter: i, drains: drains, drainCount: drainCount}
+func NewCUPSHandler(i idGetter, drainURLs []string, drainCount int) *CUPSHandler {
+	return &CUPSHandler{
+		idGetter:   i,
+		drainURLs:  drainURLs,
+		drainCount: drainCount,
+	}
 }
 
 func (h *CUPSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +40,7 @@ func (h *CUPSHandler) newResponse() map[string]interface{} {
 	appIDs := h.idGetter.GetN(h.drainCount)
 
 	for _, id := range appIDs {
-		drain := h.drains[rand.Intn(len(h.drains))]
+		drain := h.drainURLs[rand.Intn(len(h.drainURLs))]
 
 		bindings[id] = map[string]interface{}{
 			"drains": []string{

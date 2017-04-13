@@ -72,8 +72,9 @@ properties:
     description: "The syslogr IPs"
     default: []
   syslogr.port:
-    description: "The syslogr port"
-    default: ""
+    description: "Port to listen for syslog over TCP"
+  syslogr.https_port:
+    description: "Port to listen for syslog over HTTPS"
 
   trafficcontroller.ips:
     description: "The traffic controller IPs"

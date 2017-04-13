@@ -13,7 +13,7 @@ type Config struct {
 	RLPAddresses         []string           `env:"RLP_ADDRS,          required"`
 	MetricBatchInterval  time.Duration      `env:"METRIC_BATCH_INTERVAL"`
 	ETCDAddresses        []string           `env:"ETCD_ADDRS"`
-	SyslogAddresses      []string           `env:"SYSLOG_ADDRS"`
+	SyslogDrainURLs      []string           `env:"SYSLOG_DRAIN_URLS"`
 	AuthToken            string             `env:"AUTH_TOKEN"`
 	FirehoseCount        int                `env:"FIREHOSE_COUNT"`
 	StreamCount          int                `env:"STREAM_COUNT"`

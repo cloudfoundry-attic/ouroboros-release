@@ -14,7 +14,9 @@ provides:
 
 properties:
   syslogr.port:
-    description: "Port to Start the Syslog Server Listener on"
+    description: "Port to listen for syslog over TCP"
+  syslogr.https_port:
+    description: "Port to listen for syslog over HTTPS"
   syslogr.delay:
     description: "Range of durations to delay each time a message is received"
     default: "1ms-100ms"

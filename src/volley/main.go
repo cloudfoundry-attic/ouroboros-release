@@ -61,7 +61,7 @@ func main() {
 		cupsTLS,
 		config.CUPSPort,
 		idStore,
-		config.SyslogAddresses,
+		config.SyslogDrainURLs,
 		config.SyslogDrains,
 	)
 
@@ -113,7 +113,7 @@ func main() {
 	syslogRegistrar := app.NewSyslogRegistrar(
 		config.SyslogTTL,
 		config.SyslogDrains,
-		config.SyslogAddresses,
+		config.SyslogDrainURLs,
 		config.ETCDAddresses,
 		idStore,
 	)

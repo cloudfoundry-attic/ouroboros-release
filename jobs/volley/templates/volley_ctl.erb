@@ -13,11 +13,13 @@ etcd_addrs = p("etcd.machines").map do |addr|
     "http://#{addr}:4001"
 end
 
-syslog_addrs = []
+drain_urls = []
 if_p("syslogr.ips") do |syslogr_ips|
-  syslog_addrs = syslogr_ips.map do |ip|
-      "syslog://#{ip}:#{p("syslogr.port")}"
-  end
+  syslog_urls = syslogr_ips.map { |ip| "syslog://#{ip}:#{p("syslogr.port")}" }
+  drain_urls.concat(syslog_urls)
+
+  https_urls = syslogr_ips.map { |ip| "https://#{ip}:#{p("syslogr.https_port")}" }
+  drain_urls.concat(https_urls)
 end
 
 %>
@@ -60,7 +62,7 @@ case $1 in
     export ASYNC_REQUEST_DELAY="<%= p("volley.async_request_delay") %>"
     export KILL_DELAY="<%= p("volley.kill_delay") %>"
     export ETCD_ADDRS="<%= etcd_addrs.join(",") %>"
-    export SYSLOG_ADDRS="<%= syslog_addrs.join(",") %>"
+    export SYSLOG_DRAIN_URLS="<%= drain_urls.join(",") %>"
     export SYSLOG_DRAINS="<%= p("volley.syslog_drains") %>"
     export SYSLOG_TTL="<%= p("volley.syslog_ttl") %>"
     export METRON_PORT="<%= p("metron_agent.listening_port") %>"
