@@ -5,7 +5,7 @@ import (
 	"syslogr/conns"
 	"time"
 
-	. "github.com/apoydence/eachers"
+	"github.com/cloudfoundry/dropsonde/metricbatcher"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -24,11 +24,12 @@ var _ = Describe("Conns", func() {
 		mockRanger := newMockRanger()
 		mockRanger.DelayRangeOutput.Min <- 0
 		mockRanger.DelayRangeOutput.Max <- 0
+		batcher := &SpyBatcher{}
 
 		done := make(chan struct{})
 		go func() {
 			defer close(done)
-			conns.Handle(mockReader, mockRanger, newMockMetricBatcher())
+			conns.Handle(mockReader, mockRanger, batcher)
 		}()
 		mockReader.ReadOutput.Len <- 0
 		mockReader.ReadOutput.Err <- errors.New("boom")
@@ -49,32 +50,20 @@ var _ = Describe("Conns", func() {
 		Consistently(done, 490*time.Millisecond).ShouldNot(BeClosed())
 		Eventually(done, 50*time.Millisecond).Should(BeClosed())
 	})
-
-	It("reports received byte count", func() {
-		mockReader, mockBatcher, cleanup := startHandle(0)
-		defer cleanup()
-
-		testMsg := []byte("I AM A MESSAGE")
-		write(mockReader, testMsg, nil)
-
-		Eventually(mockBatcher.BatchAddCounterInput).Should(BeCalled(
-			With("syslogr.receivedBytes", uint64(len(testMsg))),
-		))
-	})
 })
 
-func startHandle(delay time.Duration) (*mockReader, *mockMetricBatcher, func()) {
+func startHandle(delay time.Duration) (*mockReader, *SpyBatcher, func()) {
 	mockReader := newMockReader()
 	mockRanger := newMockRanger()
 	mockRanger.DelayRangeOutput.Min <- delay
 	mockRanger.DelayRangeOutput.Max <- delay + 1
-	mockBatcher := newMockMetricBatcher()
+	batcher := &SpyBatcher{}
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		conns.Handle(mockReader, mockRanger, mockBatcher)
+		conns.Handle(mockReader, mockRanger, batcher)
 	}()
-	return mockReader, mockBatcher, func() {
+	return mockReader, batcher, func() {
 		mockReader.ReadOutput.Len <- 0
 		mockReader.ReadOutput.Err <- errors.New("stop")
 		Eventually(done).Should(BeClosed())
@@ -89,3 +78,14 @@ func write(r *mockReader, msg []byte, err error) {
 	r.ReadOutput.Len <- len(msg)
 	r.ReadOutput.Err <- err
 }
+
+type SpyBatcher struct{}
+
+func (s *SpyBatcher) BatchCounter(name string) metricbatcher.BatchCounterChainer {
+	return s
+}
+func (s *SpyBatcher) SetTag(key, value string) metricbatcher.BatchCounterChainer {
+	return s
+}
+func (s *SpyBatcher) Increment()       {}
+func (s *SpyBatcher) Add(value uint64) {}

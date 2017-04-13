@@ -3,6 +3,7 @@ package main
 import (
 	"conf"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -38,7 +39,7 @@ func main() {
 	}
 
 	go serviceSyslog(conf.Port, ranger, batcher)
-	serviceHTTPS(conf.HTTPSPort, conf.Cert, conf.Key)
+	serviceHTTPS(conf.HTTPSPort, conf.Cert, conf.Key, batcher)
 }
 
 func metricBatcher(port int) *metricbatcher.MetricBatcher {
@@ -69,9 +70,20 @@ func serviceSyslog(port int, r *ranger.Ranger, b *metricbatcher.MetricBatcher) {
 	}
 }
 
-func serviceHTTPS(port int, cert, key string) {
+func serviceHTTPS(port int, cert, key string, b *metricbatcher.MetricBatcher) {
 	addr := fmt.Sprintf("localhost:%d", port)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b.BatchCounter("syslogr.receivedRequest").
+			SetTag("protocol", "https").
+			Increment()
+		d, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		b.BatchCounter("syslogr.receivedBytes").
+			SetTag("protocol", "https").
+			Add(uint64(len(d)))
 		w.WriteHeader(http.StatusOK)
 	})
 	log.Printf("listening for https on: %s", addr)

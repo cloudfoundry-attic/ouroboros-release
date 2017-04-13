@@ -3,6 +3,8 @@ package conns
 import (
 	"math/rand"
 	"time"
+
+	"github.com/cloudfoundry/dropsonde/metricbatcher"
 )
 
 type Reader interface {
@@ -14,10 +16,13 @@ type Ranger interface {
 }
 
 type MetricBatcher interface {
-	BatchAddCounter(name string, delta uint64)
+	BatchCounter(name string) metricbatcher.BatchCounterChainer
 }
 
 func Handle(reader Reader, ranger Ranger, batcher MetricBatcher) {
+	batcher.BatchCounter("syslogr.handleConn").
+		SetTag("protocol", "syslog").
+		Increment()
 	min, max := ranger.DelayRange()
 	delta := int(max - min)
 	buf := make([]byte, 1024)
@@ -26,7 +31,9 @@ func Handle(reader Reader, ranger Ranger, batcher MetricBatcher) {
 		if err != nil {
 			return
 		}
-		batcher.BatchAddCounter("syslogr.receivedBytes", uint64(n))
+		batcher.BatchCounter("syslogr.receivedBytes").
+			SetTag("protocol", "syslog").
+			Add(uint64(n))
 		delay := min + time.Duration(rand.Intn(delta))
 		time.Sleep(delay)
 	}
