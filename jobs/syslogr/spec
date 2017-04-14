@@ -2,6 +2,8 @@
 name: syslogr
 templates:
  syslogr-ctl.erb: bin/syslogr-ctl
+ drain.crt.erb: certs/drain.crt
+ drain.key.erb: certs/drain.key
 
 packages:
 - syslogr
@@ -17,6 +19,10 @@ properties:
     description: "Port to listen for syslog over TCP"
   syslogr.https_port:
     description: "Port to listen for syslog over HTTPS"
+  syslogr.cert:
+    description: "Cert for HTTPS drains"
+  syslogr.key:
+    description: "Key for HTTPS drains"
   syslogr.delay:
     description: "Range of durations to delay each time a message is received"
     default: "1ms-100ms"

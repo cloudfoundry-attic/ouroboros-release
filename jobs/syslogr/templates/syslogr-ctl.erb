@@ -23,6 +23,8 @@ case $1 in
 
     export PORT='<%= p("syslogr.port") %>'
     export HTTPS_PORT='<%= p("syslogr.https_port") %>'
+    export CERT=/var/vcap/jobs/syslogr/certs/drain.crt
+    export KEY=/var/vcap/jobs/syslogr/certs/drain.key
     export DELAY='<%= p("syslogr.delay") %>'
     export METRON_PORT='<%= p("metron_agent.listening_port") %>'
 
