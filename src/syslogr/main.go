@@ -53,7 +53,7 @@ func metricBatcher(port int) *metricbatcher.MetricBatcher {
 }
 
 func serviceSyslog(port int, r *ranger.Ranger, b *metricbatcher.MetricBatcher) {
-	addr := fmt.Sprintf("localhost:%d", port)
+	addr := fmt.Sprintf(":%d", port)
 	log.Printf("listening for tcp on: %s", addr)
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -71,7 +71,7 @@ func serviceSyslog(port int, r *ranger.Ranger, b *metricbatcher.MetricBatcher) {
 }
 
 func serviceHTTPS(port int, cert, key string, b *metricbatcher.MetricBatcher) {
-	addr := fmt.Sprintf("localhost:%d", port)
+	addr := fmt.Sprintf(":%d", port)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b.BatchCounter("syslogr.receivedRequest").
 			SetTag("protocol", "https").
