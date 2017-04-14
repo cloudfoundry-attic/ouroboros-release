@@ -73,7 +73,7 @@ func serviceSyslog(port int, r *ranger.Ranger, b *metricbatcher.MetricBatcher) {
 func serviceHTTPS(port int, cert, key string, b *metricbatcher.MetricBatcher) {
 	addr := fmt.Sprintf(":%d", port)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b.BatchCounter("syslogr.receivedRequest").
+		b.BatchCounter("receivedRequest").
 			SetTag("protocol", "https").
 			Increment()
 		d, err := ioutil.ReadAll(r.Body)
@@ -81,7 +81,7 @@ func serviceHTTPS(port int, cert, key string, b *metricbatcher.MetricBatcher) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		b.BatchCounter("syslogr.receivedBytes").
+		b.BatchCounter("receivedBytes").
 			SetTag("protocol", "https").
 			Add(uint64(len(d)))
 		w.WriteHeader(http.StatusOK)

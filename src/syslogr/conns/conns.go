@@ -20,7 +20,7 @@ type MetricBatcher interface {
 }
 
 func Handle(reader Reader, ranger Ranger, batcher MetricBatcher) {
-	batcher.BatchCounter("syslogr.handleConn").
+	batcher.BatchCounter("handleConn").
 		SetTag("protocol", "syslog").
 		Increment()
 	min, max := ranger.DelayRange()
@@ -31,7 +31,7 @@ func Handle(reader Reader, ranger Ranger, batcher MetricBatcher) {
 		if err != nil {
 			return
 		}
-		batcher.BatchCounter("syslogr.receivedBytes").
+		batcher.BatchCounter("receivedBytes").
 			SetTag("protocol", "syslog").
 			Add(uint64(n))
 		delay := min + time.Duration(rand.Intn(delta))
