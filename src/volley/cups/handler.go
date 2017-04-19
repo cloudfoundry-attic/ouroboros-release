@@ -3,7 +3,6 @@ package cups
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 )
 
@@ -39,13 +38,14 @@ func (h *CUPSHandler) newResponse() map[string]interface{} {
 
 	appIDs := h.idGetter.GetN(h.drainCount)
 
-	for _, id := range appIDs {
-		drain := h.drainURLs[rand.Intn(len(h.drainURLs))]
+	drains := make([]string, 0, len(h.drainURLs))
+	for _, d := range h.drainURLs {
+		drains = append(drains, fmt.Sprint(d, "/?drain-version=2.0"))
+	}
 
+	for _, id := range appIDs {
 		bindings[id] = map[string]interface{}{
-			"drains": []string{
-				fmt.Sprint(drain, "/?drain-version=2.0"),
-			},
+			"drains":   drains,
 			"hostname": "org.space.appname",
 		}
 	}
