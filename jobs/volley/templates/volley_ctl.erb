@@ -1,27 +1,23 @@
 #!/bin/bash -e
 
 <%
-tc_addrs = p("trafficcontroller.ips").map do |addr|
-  "ws://#{addr}:#{p("trafficcontroller.outgoing_dropsonde_port")}"
+rlp = link("reverse_log_proxy")
+rlp_addrs = rlp.instances.map do |instance|
+  "#{instance.address}:#{rlp.p("reverse_log_proxy.egress.port")}"
 end
 
-rlp_addrs = p("reverselogproxy.ips").map do |addr|
-    "#{addr}:#{p("reverselogproxy.port")}"
+tc = link("trafficcontroller")
+tc_addrs = tc.instances.map do |instance|
+  "ws://#{instance.address}:#{tc.p("loggregator.outgoing_dropsonde_port")}"
 end
 
-etcd_addrs = p("etcd.machines").map do |addr|
-    "http://#{addr}:4001"
-end
-
-drain_urls = []
-if_p("syslogr.ips") do |syslogr_ips|
-  syslog_urls = syslogr_ips.map { |ip| "syslog://#{ip}:#{p("syslogr.port")}" }
-  drain_urls.concat(syslog_urls)
-
-  https_urls = syslogr_ips.map { |ip| "https://#{ip}:#{p("syslogr.https_port")}" }
-  drain_urls.concat(https_urls)
-end
-
+syslogr = link("syslogr")
+drain_urls = syslogr.instances.map do |instance|
+    [
+        "syslog://#{instance.address}:#{syslogr.p("syslogr.port")}",
+        "https://#{instance.address}:#{syslogr.p("syslogr.https_port")}",
+    ]
+end.flatten
 %>
 
 CERT_DIR=/var/vcap/jobs/volley/certs
@@ -61,7 +57,6 @@ case $1 in
     export RECV_DELAY="<%= p("volley.receive_delay") %>"
     export ASYNC_REQUEST_DELAY="<%= p("volley.async_request_delay") %>"
     export KILL_DELAY="<%= p("volley.kill_delay") %>"
-    export ETCD_ADDRS="<%= etcd_addrs.join(",") %>"
     export SYSLOG_DRAIN_URLS="<%= drain_urls.join(",") %>"
     export SYSLOG_DRAINS="<%= p("volley.syslog_drains") %>"
     export SYSLOG_TTL="<%= p("volley.syslog_ttl") %>"

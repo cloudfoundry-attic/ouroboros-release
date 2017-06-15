@@ -13,6 +13,7 @@ provides:
   type: syslogr
   properties:
   - syslogr.port
+  - syslogr.https_port
 
 properties:
   syslogr.port:

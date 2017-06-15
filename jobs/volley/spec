@@ -14,6 +14,14 @@ packages:
 - common
 - volley
 
+consumes:
+- name: trafficcontroller
+  type: trafficcontroller
+- name: reverse_log_proxy
+  type: reverse_log_proxy
+- name: syslogr
+  type: syslogr
+
 properties:
   volley.firehose_count:
     description: "Number of Firehose connections to open"
@@ -67,29 +75,6 @@ properties:
     description: "The TLS cert for the rlp server"
   volley.rlp.tls.key:
     description: "The TLS private key for the rlp server"
-
-  syslogr.ips:
-    description: "The syslogr IPs"
-    default: []
-  syslogr.port:
-    description: "Port to listen for syslog over TCP"
-  syslogr.https_port:
-    description: "Port to listen for syslog over HTTPS"
-
-  trafficcontroller.ips:
-    description: "The traffic controller IPs"
-  trafficcontroller.outgoing_dropsonde_port:
-    description: "The port to connect to traffic controller"
-    default: 8081
-
-  reverselogproxy.ips:
-    description: "The RLP IPs"
-  reverselogproxy.port:
-    description: "The port to connect to RLP's grpc endpoint"
-    default: 8082
-
-  etcd.machines:
-    description: "The addresses of etcd's nodes"
 
   metron_agent.listening_port:
     description: "The port of the local metron agent"
