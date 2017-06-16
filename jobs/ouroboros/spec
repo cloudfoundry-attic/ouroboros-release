@@ -36,9 +36,9 @@ properties:
   loggregator.tls.cn:
     description: "The common name for Loggregator's ingress"
     default: "metron"
-  ouroboros.loggregator.tls.cert:
+  loggregator.tls.cert:
     description: "The client certificate for Loggregator's ingress"
     default: ""
-  ouroboros.loggregator.tls.key:
+  loggregator.tls.key:
     description: "The client private key for Loggregator's ingress"
     default: ""
