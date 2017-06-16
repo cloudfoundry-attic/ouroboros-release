@@ -10,15 +10,10 @@ packages:
 - ouroboros
 
 properties:
+# The following properties are for the production loggregator
+
   loggregator.egress_addr:
     description: "Loggregator's egress address"
-  loggregator.ingress_port:
-    description: "Loggregator's ingress port (assumes localhost)"
-    default: "3457"
-  loggregator.ingress_version:
-    description: "Loggregator's ingress API version"
-    default: 1
-    example: ["1", "2"]
 
   uaa.addr:
     description: "The address for the UAA server"
@@ -30,15 +25,25 @@ properties:
   ouroboros.subscription_id:
     description: "The subscription id to be used for the firehose"
 
-  loggregator.tls.ca:
+# The following properties are for the staging loggregator
+
+  ouroboros.loggregator.ingress_port:
+    description: "Loggregator's ingress port (assumes localhost)"
+    default: "3457"
+  ouroboros.loggregator.ingress_version:
+    description: "Loggregator's ingress API version"
+    default: 1
+    example: ["1", "2"]
+
+  ouroboros.loggregator.tls.ca:
     description: "The CA certificate for Loggregator's ingress"
     default: ""
-  loggregator.tls.cn:
+  ouroboros.loggregator.tls.cn:
     description: "The common name for Loggregator's ingress"
     default: "metron"
-  loggregator.tls.cert:
+  ouroboros.loggregator.tls.cert:
     description: "The client certificate for Loggregator's ingress"
     default: ""
-  loggregator.tls.key:
+  ouroboros.loggregator.tls.key:
     description: "The client private key for Loggregator's ingress"
     default: ""
