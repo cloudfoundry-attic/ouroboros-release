@@ -28,11 +28,11 @@ case $1 in
     export SUBSCRIPTION_ID='<%= p("ouroboros.subscription_id") %>'
 
     export LOGGREGATOR_EGRESS_ADDR='<%= p("loggregator.egress_addr") %>'
-    export LOGGREGATOR_INGRESS_PORT='<%= p("loggregator.ingress_port") %>'
-    export LOGGREGATOR_INGRESS_VERSION='<%= p("loggregator.ingress_version") %>'
+    export LOGGREGATOR_INGRESS_PORT='<%= p("ouroboros.loggregator.ingress_port") %>'
+    export LOGGREGATOR_INGRESS_VERSION='<%= p("ouroboros.loggregator.ingress_version") %>'
 
     export LOGGREGATOR_TLS_CA_CERT=$CERT_DIR/ca.crt
-    export LOGGREGATOR_TLS_EGRESS_CN='<%= p("loggregator.tls.cn") %>'
+    export LOGGREGATOR_TLS_EGRESS_CN='<%= p("ouroboros.loggregator.tls.cn") %>'
     export LOGGREGATOR_TLS_CLIENT_CERT=$CERT_DIR/client.crt
     export LOGGREGATOR_TLS_CLIENT_KEY=$CERT_DIR/client.key
 
