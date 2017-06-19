@@ -53,7 +53,7 @@ func (m *ConnectionManager) establishConnection(filter *loggregator.Filter) {
 	defer conn.Close()
 	c := loggregator.NewEgressClient(conn)
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	ctx, _ := context.WithTimeout(context.Background(), time.Minute+(time.Duration(rand.Intn(30000))*time.Millisecond))
 	r, err := c.Receiver(ctx, &loggregator.EgressRequest{Filter: filter})
 	if err != nil {
 		log.Printf("could not receive stream: %s", err)
