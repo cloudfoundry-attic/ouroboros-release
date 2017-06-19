@@ -40,23 +40,27 @@ func NewConnectionManager(
 
 func (m *ConnectionManager) Assault(filter *loggregator.Filter) {
 	for {
-		addr := m.addrs[rand.Intn(len(m.addrs))]
-		conn, err := grpc.Dial(addr, m.dialOpts...)
-		if err != nil {
-			log.Fatalf("did not connect: %s", err)
-		}
-		defer conn.Close()
-		c := loggregator.NewEgressClient(conn)
-
-		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
-		r, err := c.Receiver(ctx, &loggregator.EgressRequest{Filter: filter})
-		if err != nil {
-			log.Printf("could not receive stream: %s", err)
-			continue
-		}
-
-		m.connect(r)
+		m.establishConnection(filter)
 	}
+}
+
+func (m *ConnectionManager) establishConnection(filter *loggregator.Filter) {
+	addr := m.addrs[rand.Intn(len(m.addrs))]
+	conn, err := grpc.Dial(addr, m.dialOpts...)
+	if err != nil {
+		log.Fatalf("did not connect: %s", err)
+	}
+	defer conn.Close()
+	c := loggregator.NewEgressClient(conn)
+
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	r, err := c.Receiver(ctx, &loggregator.EgressRequest{Filter: filter})
+	if err != nil {
+		log.Printf("could not receive stream: %s", err)
+		return
+	}
+
+	m.connect(r)
 }
 
 func (m *ConnectionManager) connect(r loggregator.Egress_ReceiverClient) {
