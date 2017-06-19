@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"volley/cups"
 
 	. "github.com/onsi/ginkgo"
@@ -24,7 +25,8 @@ var _ = Describe("Handler", func() {
 		body, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		Expect(body).To(MatchJSON(`{
+
+		Expect(simplifyHostnames(body)).To(MatchJSON(`{
 			"results": {
 				"app-id-1": {
 					"drains": ["syslog://drain-host.local/?drain-version=2.0"],
@@ -42,6 +44,11 @@ var _ = Describe("Handler", func() {
 		}`))
 	})
 })
+
+func simplifyHostnames(body []byte) []byte {
+	re := regexp.MustCompile(`org\.space\.appname-\d+`)
+	return re.ReplaceAll(body, []byte("org.space.appname"))
+}
 
 type SpyAppIDStore struct {
 	getCount int

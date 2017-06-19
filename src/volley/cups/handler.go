@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 type idGetter interface {
@@ -46,7 +47,7 @@ func (h *CUPSHandler) newResponse() map[string]interface{} {
 	for _, id := range appIDs {
 		bindings[id] = map[string]interface{}{
 			"drains":   drains,
-			"hostname": "org.space.appname",
+			"hostname": fmt.Sprintf("org.space.appname-%d", time.Now().UnixNano()),
 		}
 	}
 
