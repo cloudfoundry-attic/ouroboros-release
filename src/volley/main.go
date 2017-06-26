@@ -85,20 +85,22 @@ func main() {
 		log.Panic(err)
 	}
 
-	v2ConnManager := v2.NewConnectionManager(
-		config.RLPAddresses,
-		config.ReceiveDelay,
-		metricBatcher,
-		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
-	)
-	egressV2 := app.NewEgressV2(
-		v2ConnManager,
-		idStore,
-		config.FirehoseCount,
-		config.StreamCount,
-		config.StreamCount,
-	)
-	go egressV2.Start()
+	if len(config.RLPAddresses) > 0 {
+		v2ConnManager := v2.NewConnectionManager(
+			config.RLPAddresses,
+			config.ReceiveDelay,
+			metricBatcher,
+			grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+		)
+		egressV2 := app.NewEgressV2(
+			v2ConnManager,
+			idStore,
+			config.FirehoseCount,
+			config.StreamCount,
+			config.StreamCount,
+		)
+		go egressV2.Start()
+	}
 
 	killer := app.NewKiller(
 		config.KillDelay,
@@ -110,14 +112,16 @@ func main() {
 	)
 	go killer.Start()
 
-	syslogRegistrar := app.NewSyslogRegistrar(
-		config.SyslogTTL,
-		config.SyslogDrains,
-		config.SyslogDrainURLs,
-		config.ETCDAddresses,
-		idStore,
-	)
-	go syslogRegistrar.Start()
+	if len(config.SyslogDrainURLs) > 0 {
+		syslogRegistrar := app.NewSyslogRegistrar(
+			config.SyslogTTL,
+			config.SyslogDrains,
+			config.SyslogDrainURLs,
+			config.ETCDAddresses,
+			idStore,
+		)
+		go syslogRegistrar.Start()
+	}
 
 	// Blocking on pprof
 	if err := http.ListenAndServe("localhost:0", nil); err != nil {

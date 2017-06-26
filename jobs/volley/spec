@@ -19,8 +19,10 @@ consumes:
   type: trafficcontroller
 - name: reverse_log_proxy
   type: reverse_log_proxy
+  optional: true
 - name: syslogr
   type: syslogr
+  optional: true
 
 properties:
   volley.firehose_count:

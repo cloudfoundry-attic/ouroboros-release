@@ -1,9 +1,10 @@
 #!/bin/bash -e
 
 <%
-rlp = link("reverse_log_proxy")
-rlp_addrs = rlp.instances.map do |instance|
-  "#{instance.address}:#{rlp.p("reverse_log_proxy.egress.port")}"
+if_link("reverse_log_proxy") do |rlp|
+  rlp_addrs = rlp.instances.map do |instance|
+    "#{instance.address}:#{rlp.p("reverse_log_proxy.egress.port")}"
+  end
 end
 
 tc = link("trafficcontroller")
@@ -11,13 +12,14 @@ tc_addrs = tc.instances.map do |instance|
   "ws://#{instance.address}:#{tc.p("loggregator.outgoing_dropsonde_port")}"
 end
 
-syslogr = link("syslogr")
-drain_urls = syslogr.instances.map do |instance|
+if_link("syslogr") do |syslogr|
+  drain_urls = syslogr.instances.map do |instance|
     [
-        "syslog://#{instance.address}:#{syslogr.p("syslogr.port")}",
-        "https://#{instance.address}:#{syslogr.p("syslogr.https_port")}",
+      "syslog://#{instance.address}:#{syslogr.p("syslogr.port")}",
+      "https://#{instance.address}:#{syslogr.p("syslogr.https_port")}",
     ]
-end.flatten
+  end.flatten
+end
 %>
 
 CERT_DIR=/var/vcap/jobs/volley/certs
@@ -46,8 +48,15 @@ case $1 in
 
     chown -R vcap:vcap $LOG_DIR
 
+    <% if drain_urls && drain_urls.length > 0 %>
+      export SYSLOG_DRAIN_URLS="<%= drain_urls.join(",") %>"
+    <% end %>
+
+    <% if rlp_addrs && rlp_addrs.length > 0 %>
+      export RLP_ADDRS="<%= rlp_addrs.join(",") %>"
+    <% end %>
+
     export TC_ADDRS="<%= tc_addrs.join(",") %>"
-    export RLP_ADDRS="<%= rlp_addrs.join(",") %>"
     export AUTH_TOKEN="<%= p("volley.auth_token") %>"
     export FIREHOSE_COUNT="<%= p("volley.firehose_count") %>"
     export STREAM_COUNT="<%= p("volley.stream_count") %>"
@@ -57,7 +66,6 @@ case $1 in
     export RECV_DELAY="<%= p("volley.receive_delay") %>"
     export ASYNC_REQUEST_DELAY="<%= p("volley.async_request_delay") %>"
     export KILL_DELAY="<%= p("volley.kill_delay") %>"
-    export SYSLOG_DRAIN_URLS="<%= drain_urls.join(",") %>"
     export SYSLOG_DRAINS="<%= p("volley.syslog_drains") %>"
     export SYSLOG_TTL="<%= p("volley.syslog_ttl") %>"
     export METRON_PORT="<%= p("metron_agent.listening_port") %>"
