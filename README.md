@@ -2,7 +2,7 @@
 
 Ouroboros release is a Bosh release for putting heavy load on Loggregator.
 
-The name Ouroboros comes from the [serpent eating itself](ouroboros).  With
+The name Ouroboros comes from the [serpent eating itself][ouroboros].  With
 such a name, the ouroboros job reads from the firehose of one Loggregator
 deployment and writes all the log traffic out into another Loggregator
 deployment. The ouroboros process is simply a firehose nozzle.
