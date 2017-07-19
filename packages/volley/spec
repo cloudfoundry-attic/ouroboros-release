@@ -50,6 +50,5 @@ files:
 - volley/*.go # gosub
 - volley/app/*.go # gosub
 - volley/cups/*.go # gosub
-- volley/drains/*.go # gosub
 - volley/v1/*.go # gosub
 - volley/v2/*.go # gosub
