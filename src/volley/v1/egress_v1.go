@@ -55,7 +55,7 @@ func NewEgressV1(
 
 // Start initiates all the configured consumers
 func (e EgressV1) Start() {
-	conn := New(
+	conn := NewConnectionManager(
 		e.tcAddrs,
 		e.authToken,
 		e.subscriptionID,

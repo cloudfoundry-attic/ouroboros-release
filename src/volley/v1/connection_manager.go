@@ -42,7 +42,7 @@ type ConnectionManager struct {
 	receiveDelay   conf.DurationRange
 }
 
-func New(
+func NewConnectionManager(
 	tcAddrs []string,
 	authToken string,
 	subscriptionID string,

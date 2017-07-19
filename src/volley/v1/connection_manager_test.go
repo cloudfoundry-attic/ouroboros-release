@@ -46,7 +46,7 @@ var _ = Describe("Connection", func() {
 		testhelpers.AlwaysReturn(mockBatcher.BatchCounterOutput, mockChainer)
 		testhelpers.AlwaysReturn(mockChainer.SetTagOutput, mockChainer)
 
-		conn = v1.New(
+		conn = v1.NewConnectionManager(
 			[]string{strings.Replace(server.URL, "http", "ws", 1)},
 			"some-auth",
 			"some-sub-id",
@@ -133,7 +133,7 @@ var _ = Describe("Connection", func() {
 		})
 
 		It("is a slow consumer when delay is set", func() {
-			slowConn := v1.New(
+			slowConn := v1.NewConnectionManager(
 				[]string{strings.Replace(server.URL, "http", "ws", 1)},
 				"some-auth",
 				"some-sub-id",
@@ -311,7 +311,7 @@ var _ = Describe("Connection", func() {
 		})
 
 		It("is a slow consumer when delay is set", func() {
-			slowConn := v1.New(
+			slowConn := v1.NewConnectionManager(
 				[]string{strings.Replace(server.URL, "http", "ws", 1)},
 				"some-auth",
 				"some-sub-id",

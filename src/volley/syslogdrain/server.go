@@ -17,12 +17,11 @@ func ListenAndServe(
 	drainURLs []string,
 	drainCount int,
 ) {
-	handler := NewCUPSHandler(idGetter, drainURLs, drainCount)
-
 	l, err := tls.Listen("tcp", fmt.Sprintf(":%d", port), tlsConfig)
 	if err != nil {
 		log.Panicf("Failed to start CUPS provider: %s", err)
 	}
 
+	handler := NewCUPSHandler(idGetter, drainURLs, drainCount)
 	log.Println(http.Serve(l, handler))
 }
