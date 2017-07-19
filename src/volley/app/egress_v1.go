@@ -21,6 +21,11 @@ type EgressV1 struct {
 	batcher              v1.Batcher
 }
 
+// NewEgressV1 creates consumers of Loggregator. Consumers may be firehose
+// connections, application streams, recent logs requests, or container
+// metrics. Note that the number of consumers of a particular type are also
+// configurable, e.g., we may have 10 firehose consumers, 5 application
+// streams, 15 recent log requests, etc.
 func NewEgressV1(
 	firehoseCount int,
 	streamCount int,
@@ -49,6 +54,7 @@ func NewEgressV1(
 	}
 }
 
+// Start initiates all the configured consumers
 func (e EgressV1) Start() {
 	conn := v1.New(
 		e.tcAddrs,

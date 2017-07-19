@@ -20,6 +20,8 @@ type SyslogRegistrar struct {
 	idGetter   IDGetter
 }
 
+// NewSyslogRegistrar creates a SyslogRegistrar which will write various syslog
+// drain configuration details into etcd
 func NewSyslogRegistrar(
 	ttl time.Duration,
 	drainCount int,

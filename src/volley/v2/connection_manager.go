@@ -24,6 +24,8 @@ type ConnectionManager struct {
 	dialOpts     []grpc.DialOption
 }
 
+// NewConnectionManager manages the gRPC connections to
+// the Loggregator V2 API
 func NewConnectionManager(
 	addrs []string,
 	receiveDelay conf.DurationRange,

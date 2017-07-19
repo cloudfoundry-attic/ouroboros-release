@@ -7,6 +7,9 @@ import (
 	"net/http"
 )
 
+// ListenAndServe starts a TCP listener which emulates CAPI
+// and will provide the specified number of syslog drains
+// with corresponding URLs
 func ListenAndServe(
 	tlsConfig *tls.Config,
 	port int16,

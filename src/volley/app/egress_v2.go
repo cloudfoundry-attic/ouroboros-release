@@ -8,6 +8,8 @@ type ConnectionManager interface {
 	Assault(filter *loggregator.Filter)
 }
 
+// EgressV2 initiates the configured number of connections to Loggregator's V2
+// API and uses the ConnectionManager to simulate hostile consumers
 type EgressV2 struct {
 	connManager   ConnectionManager
 	idStore       IDGetter
@@ -16,6 +18,8 @@ type EgressV2 struct {
 	appLogStreams int
 }
 
+// NewEgressV2 creates a new EgressV2 with a configurable number of firehose
+// connections, app streams, and app log streams
 func NewEgressV2(
 	c ConnectionManager,
 	s IDGetter,

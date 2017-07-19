@@ -78,17 +78,22 @@ func main() {
 	)
 	go egressV1.Start()
 
-	tlsConfig, err := tls.NewMutualTLSConfig(config.TLSCertPath, config.TLSKeyPath, config.TLSCAPath, "reverselogproxy")
-	if err != nil {
-		log.Panic(err)
-	}
-
 	if len(config.RLPAddresses) > 0 {
+		rlpTLSConfig, err := tls.NewMutualTLSConfig(
+			config.TLSCertPath,
+			config.TLSKeyPath,
+			config.TLSCAPath,
+			"reverselogproxy",
+		)
+		if err != nil {
+			log.Panic(err)
+		}
+
 		v2ConnManager := v2.NewConnectionManager(
 			config.RLPAddresses,
 			config.ReceiveDelay,
 			metricBatcher,
-			grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+			grpc.WithTransportCredentials(credentials.NewTLS(rlpTLSConfig)),
 		)
 		egressV2 := app.NewEgressV2(
 			v2ConnManager,
