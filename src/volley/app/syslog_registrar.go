@@ -1,11 +1,14 @@
 package app
 
 import (
+	"crypto/sha1"
 	"log"
+	"math/rand"
+	"path"
 	"time"
-	"volley/drains"
 
 	"github.com/coreos/etcd/client"
+	"golang.org/x/net/context"
 )
 
 type IDGetter interface {
@@ -45,7 +48,7 @@ func (r *SyslogRegistrar) Start() {
 
 	c := r.setupClient()
 	for i := 0; i < r.drainCount; i++ {
-		drains.AdvertiseRandom(r.idGetter, c, r.drainURLs, r.ttl)
+		AdvertiseRandom(r.idGetter, c, r.drainURLs, r.ttl)
 	}
 }
 
@@ -58,4 +61,21 @@ func (r *SyslogRegistrar) setupClient() client.KeysAPI {
 	}
 
 	return client.NewKeysAPI(c)
+}
+
+type ETCDSetter interface {
+	Set(ctx context.Context, key, value string, opts *client.SetOptions) (*client.Response, error)
+}
+
+// AdvertiseRandom advertises a random drain URL for the first app ID returned
+// from ids.
+func AdvertiseRandom(ids IDGetter, etcd ETCDSetter, drainURLs []string, ttl time.Duration) {
+	drain := drainURLs[rand.Intn(len(drainURLs))]
+	drainHash := sha1.Sum([]byte(drain))
+	id := ids.Get()
+	key := path.Join("/loggregator", "services", id, string(drainHash[:]))
+	_, err := etcd.Set(context.Background(), key, drain, &client.SetOptions{TTL: ttl})
+	if err != nil {
+		log.Printf("etcd failed: %s", err)
+	}
 }

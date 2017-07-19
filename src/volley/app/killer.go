@@ -11,6 +11,7 @@ type Killer struct {
 	kill      func()
 }
 
+// NewKiller calls a function after a random delay
 func NewKiller(killDelay conf.DurationRange, kill func()) *Killer {
 	return &Killer{
 		killDelay: killDelay,

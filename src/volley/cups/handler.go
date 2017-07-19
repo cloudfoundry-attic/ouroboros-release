@@ -17,6 +17,8 @@ type CUPSHandler struct {
 	drainCount int
 }
 
+// NewCUPSHandler returns a http.Handler which simulates CAPI and provides a
+// configurable list of syslog drains
 func NewCUPSHandler(i idGetter, drainURLs []string, drainCount int) *CUPSHandler {
 	return &CUPSHandler{
 		idGetter:   i,
