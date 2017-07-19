@@ -40,6 +40,8 @@ func NewConnectionManager(
 	}
 }
 
+// Assault repeatedly establishes connections to the Loggregator V2 API
+// and reads from those connections for a random length of time
 func (m *ConnectionManager) Assault(filter *loggregator.Filter) {
 	for {
 		m.establishConnection(filter)

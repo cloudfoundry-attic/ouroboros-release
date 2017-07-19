@@ -28,6 +28,9 @@ type Batcher interface {
 	BatchCounter(name string) metricbatcher.BatchCounterChainer
 }
 
+// ConnectionManager initiates random connections to a firehose, app
+// stream, container metric stream, or it makes a recent logs request.
+// The ConnectionManager connects to all proviuded Traffic Controllers.
 type ConnectionManager struct {
 	consumers      []*consumer.Consumer
 	consumerLock   sync.Mutex
