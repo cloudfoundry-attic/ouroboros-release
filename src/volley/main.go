@@ -20,7 +20,7 @@ import (
 	"github.com/cloudfoundry/dropsonde/metricbatcher"
 	"github.com/cloudfoundry/dropsonde/metrics"
 
-	"volley/cups"
+	"volley/syslogdrain"
 	"volley/v1"
 	"volley/v2"
 )
@@ -56,7 +56,7 @@ func main() {
 		log.Printf("Failed to load CUPS TLS config: %s", err)
 	}
 
-	go cups.ListenAndServe(
+	go syslogdrain.ListenAndServe(
 		cupsTLS,
 		config.CUPSPort,
 		idStore,
@@ -117,7 +117,7 @@ func main() {
 	go killer.Start()
 
 	if len(config.SyslogDrainURLs) > 0 {
-		syslogRegistrar := cups.NewSyslogRegistrar(
+		syslogRegistrar := syslogdrain.NewSyslogRegistrar(
 			config.SyslogTTL,
 			config.SyslogDrains,
 			config.SyslogDrainURLs,

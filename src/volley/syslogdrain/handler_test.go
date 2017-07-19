@@ -1,4 +1,4 @@
-package cups_test
+package syslogdrain_test
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
-	"volley/cups"
+	"volley/syslogdrain"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,7 +15,7 @@ import (
 var _ = Describe("Handler", func() {
 	It("returns a drain bindings", func() {
 		store := &SpyAppIDStore{}
-		handler := cups.NewCUPSHandler(store, []string{"syslog://drain-host.local"}, 3)
+		handler := syslogdrain.NewCUPSHandler(store, []string{"syslog://drain-host.local"}, 3)
 		rw := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
 

@@ -1,4 +1,4 @@
-package cups
+package syslogdrain
 
 import (
 	"crypto/sha1"

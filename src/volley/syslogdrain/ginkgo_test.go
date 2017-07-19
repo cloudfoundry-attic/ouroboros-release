@@ -1,4 +1,4 @@
-package cups_test
+package syslogdrain_test
 
 import (
 	. "github.com/onsi/ginkgo"
