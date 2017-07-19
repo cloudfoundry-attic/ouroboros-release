@@ -1,6 +1,7 @@
 package main
 
 import (
+	"conf"
 	"fmt"
 	"log"
 	"math/rand"
@@ -13,12 +14,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/bradylove/envstruct"
 	"github.com/cloudfoundry/dropsonde/emitter"
 	"github.com/cloudfoundry/dropsonde/metric_sender"
 	"github.com/cloudfoundry/dropsonde/metricbatcher"
 	"github.com/cloudfoundry/dropsonde/metrics"
 
-	"volley/app"
 	"volley/cups"
 	"volley/v1"
 	"volley/v2"
@@ -29,7 +30,7 @@ func main() {
 
 	log.Println("Volley started...")
 	defer log.Println("Volley closing")
-	config, err := app.LoadConfig()
+	config, err := LoadConfig()
 	if err != nil {
 		log.Panic(err)
 	}
@@ -63,7 +64,7 @@ func main() {
 		config.SyslogDrains,
 	)
 
-	egressV1 := app.NewEgressV1(
+	egressV1 := v1.NewEgressV1(
 		config.FirehoseCount,
 		config.StreamCount,
 		config.RecentLogCount,
@@ -95,7 +96,7 @@ func main() {
 			metricBatcher,
 			grpc.WithTransportCredentials(credentials.NewTLS(rlpTLSConfig)),
 		)
-		egressV2 := app.NewEgressV2(
+		egressV2 := v2.NewEgressV2(
 			v2ConnManager,
 			idStore,
 			config.FirehoseCount,
@@ -105,7 +106,7 @@ func main() {
 		go egressV2.Start()
 	}
 
-	killer := app.NewKiller(
+	killer := NewKiller(
 		config.KillDelay,
 		func() {
 			if err := syscall.Kill(os.Getpid(), syscall.SIGKILL); err != nil {
@@ -116,7 +117,7 @@ func main() {
 	go killer.Start()
 
 	if len(config.SyslogDrainURLs) > 0 {
-		syslogRegistrar := app.NewSyslogRegistrar(
+		syslogRegistrar := cups.NewSyslogRegistrar(
 			config.SyslogTTL,
 			config.SyslogDrains,
 			config.SyslogDrainURLs,
@@ -130,4 +131,63 @@ func main() {
 	if err := http.ListenAndServe("localhost:0", nil); err != nil {
 		log.Printf("Error starting pprof server: %s", err)
 	}
+}
+
+type Config struct {
+	TCAddresses          []string           `env:"TC_ADDRS,           required"`
+	MetronPort           int                `env:"METRON_PORT,        required"`
+	RLPAddresses         []string           `env:"RLP_ADDRS"`
+	MetricBatchInterval  time.Duration      `env:"METRIC_BATCH_INTERVAL"`
+	ETCDAddresses        []string           `env:"ETCD_ADDRS"`
+	SyslogDrainURLs      []string           `env:"SYSLOG_DRAIN_URLS"`
+	AuthToken            string             `env:"AUTH_TOKEN"`
+	FirehoseCount        int                `env:"FIREHOSE_COUNT"`
+	StreamCount          int                `env:"STREAM_COUNT"`
+	RecentLogCount       int                `env:"RECENT_LOG_COUNT"`
+	ContainerMetricCount int                `env:"CONTAINER_METRIC_COUNT"`
+	SyslogDrains         int                `env:"SYSLOG_DRAINS"`
+	SyslogTTL            time.Duration      `env:"SYSLOG_TTL"`
+	SubscriptionID       string             `env:"SUB_ID"`
+	ReceiveDelay         conf.DurationRange `env:"RECV_DELAY"`
+	AsyncRequestDelay    conf.DurationRange `env:"ASYNC_REQUEST_DELAY"`
+	KillDelay            conf.DurationRange `env:"KILL_DELAY"`
+	TLSCertPath          string             `env:"V2_TLS_CERT_PATH"`
+	TLSKeyPath           string             `env:"V2_TLS_KEY_PATH"`
+	TLSCAPath            string             `env:"V2_TLS_CA_PATH"`
+
+	CUPSPort       int16  `env:"CUPS_PORT,        required"`
+	CUPSServerCert string `env:"CUPS_SERVER_CERT, required"`
+	CUPSServerKey  string `env:"CUPS_SERVER_KEY,  required"`
+	CUPSServerCA   string `env:"CUPS_SERVER_CA,   required"`
+	CUPSServerCN   string `env:"CUPS_SERVER_CN,   required"`
+}
+
+func LoadConfig() (Config, error) {
+	var c Config
+	c.MetricBatchInterval = 5 * time.Second
+	err := envstruct.Load(&c)
+	return c, err
+}
+
+type Killer struct {
+	killDelay conf.DurationRange
+	kill      func()
+}
+
+// NewKiller calls a function after a random delay
+func NewKiller(killDelay conf.DurationRange, kill func()) *Killer {
+	return &Killer{
+		killDelay: killDelay,
+		kill:      kill,
+	}
+}
+
+func (k *Killer) Start() {
+	k.killAfterRandomDelay()
+}
+
+func (v *Killer) killAfterRandomDelay() {
+	delta := int(v.killDelay.Max - v.killDelay.Min)
+	killDelay := v.killDelay.Min + time.Duration(rand.Intn(delta))
+	time.AfterFunc(killDelay, v.kill)
 }

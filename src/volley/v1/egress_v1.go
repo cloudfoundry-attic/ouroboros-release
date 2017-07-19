@@ -1,10 +1,9 @@
-package app
+package v1
 
 import (
 	"conf"
 	"math/rand"
 	"time"
-	"volley/v1"
 )
 
 type EgressV1 struct {
@@ -17,8 +16,8 @@ type EgressV1 struct {
 	subscriptionID       string
 	receiveDelay         conf.DurationRange
 	asyncRequestDelay    conf.DurationRange
-	idStore              v1.AppIDStore
-	batcher              v1.Batcher
+	idStore              AppIDStore
+	batcher              Batcher
 }
 
 // NewEgressV1 creates consumers of Loggregator. Consumers may be firehose
@@ -36,8 +35,8 @@ func NewEgressV1(
 	subscriptionID string,
 	receiveDelay conf.DurationRange,
 	asyncRequestDelay conf.DurationRange,
-	idStore v1.AppIDStore,
-	batcher v1.Batcher,
+	idStore AppIDStore,
+	batcher Batcher,
 ) *EgressV1 {
 	return &EgressV1{
 		firehoseCount:        firehoseCount,
@@ -56,7 +55,7 @@ func NewEgressV1(
 
 // Start initiates all the configured consumers
 func (e EgressV1) Start() {
-	conn := v1.New(
+	conn := New(
 		e.tcAddrs,
 		e.authToken,
 		e.subscriptionID,

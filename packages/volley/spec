@@ -48,7 +48,6 @@ files:
 - loggregator/v2/*.go # gosub
 - tls/*.go # gosub
 - volley/*.go # gosub
-- volley/app/*.go # gosub
 - volley/cups/*.go # gosub
 - volley/v1/*.go # gosub
 - volley/v2/*.go # gosub

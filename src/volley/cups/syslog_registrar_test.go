@@ -1,4 +1,4 @@
-package app_test
+package cups_test
 
 import (
 	"crypto/sha1"
@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"time"
-	"volley/app"
+	"volley/cups"
 
 	"github.com/coreos/etcd/client"
 	"github.com/gorilla/websocket"
@@ -32,7 +32,7 @@ var _ = Describe("SyslogRegistrar", func() {
 	})
 
 	It("adds syslog drain bindings to etcd", func() {
-		r := app.NewSyslogRegistrar(
+		r := cups.NewSyslogRegistrar(
 			time.Hour,
 			5,
 			[]string{"some-url"},
@@ -62,7 +62,7 @@ var _ = Describe("SyslogRegistrar", func() {
 		syslogURL := "some-syslog-url"
 		syslogHash := sha1.Sum([]byte(syslogURL))
 		spySetter := &SpySetter{}
-		app.AdvertiseRandom(&SpyIDGetter{}, spySetter, []string{syslogURL}, time.Minute)
+		cups.AdvertiseRandom(&SpyIDGetter{}, spySetter, []string{syslogURL}, time.Minute)
 
 		Expect(spySetter.key).To(Equal(
 			"/loggregator/services/app-id/" + string(syslogHash[:]),
@@ -77,7 +77,7 @@ var _ = Describe("SyslogRegistrar", func() {
 
 		advertised := make(map[string]struct{})
 		for tries := 0; tries < 100 && len(advertised) < len(syslogURLs); tries++ {
-			app.AdvertiseRandom(&SpyIDGetter{}, spySetter, syslogURLs, time.Second)
+			cups.AdvertiseRandom(&SpyIDGetter{}, spySetter, syslogURLs, time.Second)
 
 			Expect(syslogURLs).To(ContainElement(spySetter.value))
 			advertised[spySetter.value] = struct{}{}

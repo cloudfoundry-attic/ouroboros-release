@@ -1,10 +1,10 @@
-package app_test
+package v2_test
 
 import (
 	loggregator "loggregator/v2"
 	"math/rand"
 	"sync"
-	"volley/app"
+	"volley/v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,7 +14,7 @@ var _ = Describe("EgressV2", func() {
 	It("opens specified number of firehose conns to RLP", func() {
 		connectionManager := &spyConnManager{}
 		store := &spyIDStore{}
-		egress := app.NewEgressV2(connectionManager, store, 10, 0, 0)
+		egress := v2.NewEgressV2(connectionManager, store, 10, 0, 0)
 		go egress.Start()
 
 		Eventually(connectionManager.FirehoseCount).Should(Equal(10))
@@ -27,7 +27,7 @@ var _ = Describe("EgressV2", func() {
 				appIDs: availableApps,
 			}
 			connectionManager := &spyConnManager{}
-			egress := app.NewEgressV2(connectionManager, idStore, 0, 3, 0)
+			egress := v2.NewEgressV2(connectionManager, idStore, 0, 3, 0)
 			go egress.Start()
 
 			f := func() int {
@@ -44,7 +44,7 @@ var _ = Describe("EgressV2", func() {
 				appIDs: availableApps,
 			}
 			connectionManager := &spyConnManager{}
-			egress := app.NewEgressV2(connectionManager, idStore, 0, 0, 7)
+			egress := v2.NewEgressV2(connectionManager, idStore, 0, 0, 7)
 			go egress.Start()
 
 			f := func() int {

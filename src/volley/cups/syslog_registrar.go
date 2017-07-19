@@ -1,4 +1,4 @@
-package app
+package cups
 
 import (
 	"crypto/sha1"
