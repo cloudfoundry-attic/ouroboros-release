@@ -24,11 +24,9 @@ import (
 	"volley/v2"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	log.Println("Volley started...")
 	defer log.Println("Volley closing")
 	config, err := app.LoadConfig()

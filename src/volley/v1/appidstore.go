@@ -3,13 +3,8 @@ package v1
 import (
 	"math/rand"
 	"sync/atomic"
-	"time"
 	"unsafe"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 type IDStore struct {
 	ids      []unsafe.Pointer
