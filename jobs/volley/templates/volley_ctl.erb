@@ -1,6 +1,10 @@
 #!/bin/bash -e
 
 <%
+rlp_addrs = []
+tc_addrs = []
+drain_urls = []
+
 if_link("reverse_log_proxy") do |rlp|
   rlp_addrs = rlp.instances.map do |instance|
     "#{instance.address}:#{rlp.p("reverse_log_proxy.egress.port")}"
