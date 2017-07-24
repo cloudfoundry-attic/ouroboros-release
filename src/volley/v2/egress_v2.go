@@ -27,7 +27,9 @@ type EgressV2 struct {
 func NewEgressV2(
 	c Assaulter,
 	s IDGetter,
-	firehoseCount, appStreamCount, appLogStreamCount int,
+	firehoseCount int,
+	appStreamCount int,
+	appLogStreamCount int,
 ) *EgressV2 {
 	return &EgressV2{
 		connManager:   c,

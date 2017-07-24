@@ -58,6 +58,9 @@ properties:
   volley.metric_batch_interval:
     description: "The interval for metric batching"
     default: "5s"
+  volley.use_preferred_tags:
+    description: "When making a request to RLP, should it request the new tag format"
+    default: true
 
   volley.cups.port:
     description: "The port for Volley to listen on to act as the CUPS provider for scalable syslog."

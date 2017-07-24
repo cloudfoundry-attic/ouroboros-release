@@ -18,10 +18,11 @@ type Batcher interface {
 }
 
 type ConnectionManager struct {
-	addrs        []string
-	receiveDelay conf.DurationRange
-	batcher      Batcher
-	dialOpts     []grpc.DialOption
+	addrs            []string
+	receiveDelay     conf.DurationRange
+	usePreferredTags bool
+	batcher          Batcher
+	dialOpts         []grpc.DialOption
 }
 
 // NewConnectionManager manages the gRPC connections to
@@ -29,14 +30,16 @@ type ConnectionManager struct {
 func NewConnectionManager(
 	addrs []string,
 	receiveDelay conf.DurationRange,
+	usePreferredTags bool,
 	batcher Batcher,
 	dialOpts ...grpc.DialOption,
 ) *ConnectionManager {
 	return &ConnectionManager{
-		addrs:        addrs,
-		receiveDelay: receiveDelay,
-		batcher:      batcher,
-		dialOpts:     dialOpts,
+		addrs:            addrs,
+		receiveDelay:     receiveDelay,
+		usePreferredTags: usePreferredTags,
+		batcher:          batcher,
+		dialOpts:         dialOpts,
 	}
 }
 
@@ -58,7 +61,7 @@ func (m *ConnectionManager) establishConnection(filter *loggregator.Filter) {
 	c := loggregator.NewEgressClient(conn)
 
 	ctx, _ := context.WithTimeout(context.Background(), time.Minute+(time.Duration(rand.Intn(30000))*time.Millisecond))
-	r, err := c.Receiver(ctx, &loggregator.EgressRequest{Filter: filter})
+	r, err := c.Receiver(ctx, &loggregator.EgressRequest{UsePreferredTags: m.usePreferredTags, Filter: filter})
 	if err != nil {
 		log.Printf("could not receive stream: %s", err)
 		return

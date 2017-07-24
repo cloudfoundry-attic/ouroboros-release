@@ -36,7 +36,7 @@ var _ = Describe("ConnectionManager", func() {
 			addrs = append(addrs, addr)
 			spies = append(spies, spy)
 		}
-		c = v2.NewConnectionManager(addrs, conf.DurationRange{}, batcher, grpc.WithInsecure())
+		c = v2.NewConnectionManager(addrs, conf.DurationRange{}, true, batcher, grpc.WithInsecure())
 	})
 
 	Context("without an error", func() {
@@ -53,6 +53,7 @@ var _ = Describe("ConnectionManager", func() {
 			var req *loggregator.EgressRequest
 			Eventually(reqs).Should(Receive(&req))
 			Expect(req.GetFilter()).To(Equal(f))
+			Expect(req.UsePreferredTags).To(BeTrue())
 		})
 
 		It("makes a request to every RLP", func() {

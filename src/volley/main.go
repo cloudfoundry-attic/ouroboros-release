@@ -94,6 +94,7 @@ func main() {
 		v2ConnManager := v2.NewConnectionManager(
 			config.RLPAddresses,
 			config.ReceiveDelay,
+			config.UsePreferredTags,
 			metricBatcher,
 			grpc.WithTransportCredentials(credentials.NewTLS(rlpTLSConfig)),
 		)
@@ -152,6 +153,7 @@ type Config struct {
 	ReceiveDelay         conf.DurationRange `env:"RECV_DELAY"`
 	AsyncRequestDelay    conf.DurationRange `env:"ASYNC_REQUEST_DELAY"`
 	KillDelay            conf.DurationRange `env:"KILL_DELAY"`
+	UsePreferredTags     bool               `env:"USE_PREFERRED_TAGS"`
 	TLSCertPath          string             `env:"V2_TLS_CERT_PATH"`
 	TLSKeyPath           string             `env:"V2_TLS_KEY_PATH"`
 	TLSCAPath            string             `env:"V2_TLS_CA_PATH"`

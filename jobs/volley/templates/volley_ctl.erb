@@ -70,6 +70,7 @@ case $1 in
     export SYSLOG_TTL="<%= p("volley.syslog_ttl") %>"
     export METRON_PORT="<%= p("metron_agent.listening_port") %>"
     export METRIC_BATCH_INTERVAL="<%= p("volley.metric_batch_interval") %>"
+    export USE_PREFERRED_TAGS="<%= p("volley.use_preferred_tags") %>"
     export V2_TLS_CERT_PATH="$CERT_DIR/volley_rlp.crt"
     export V2_TLS_KEY_PATH="$CERT_DIR/volley_rlp.key"
     export V2_TLS_CA_PATH="$CERT_DIR/ca.crt"
