@@ -1,8 +1,9 @@
 package converter_test
 
 import (
-	v2 "loggregator/v2"
 	"ouroboros/internal/converter"
+
+	v2 "loggregator/v2"
 
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
@@ -49,7 +50,9 @@ var _ = Describe("ContainerMetric", func() {
 				},
 			}
 
-			Expect(*converter.ToV1(envelope)).To(MatchFields(IgnoreExtras, Fields{
+			envelopes := converter.ToV1(envelope)
+			Expect(len(envelopes)).To(Equal(1))
+			Expect(*envelopes[0]).To(MatchFields(IgnoreExtras, Fields{
 				"EventType": Equal(events.Envelope_ContainerMetric.Enum()),
 				"ContainerMetric": Equal(&events.ContainerMetric{
 					ApplicationId:    proto.String("some-id"),
@@ -67,20 +70,6 @@ var _ = Describe("ContainerMetric", func() {
 			Expect(converter.ToV1(v2e)).To(BeNil())
 		},
 			Entry("bare envelope", &v2.Envelope{}),
-			Entry("partial container metric", &v2.Envelope{
-				Message: &v2.Envelope_Gauge{
-					Gauge: &v2.Gauge{
-						Metrics: map[string]*v2.GaugeValue{
-							"cpu": {
-								Value: 99,
-							},
-							"memory": {
-								Value: 101,
-							},
-						},
-					},
-				},
-			}),
 			Entry("with empty fields", &v2.Envelope{
 				Message: &v2.Envelope_Gauge{
 					Gauge: &v2.Gauge{
@@ -145,7 +134,7 @@ var _ = Describe("ContainerMetric", func() {
 					},
 				},
 			}
-			Expect(*converter.ToV2(v1Envelope)).To(MatchFields(IgnoreExtras, Fields{
+			Expect(*converter.ToV2(v1Envelope, false)).To(MatchFields(IgnoreExtras, Fields{
 				"SourceId": Equal(v2Envelope.SourceId),
 				"Message":  Equal(v2Envelope.Message),
 			}))
@@ -163,7 +152,7 @@ var _ = Describe("ContainerMetric", func() {
 				SourceId: "some-deployment/some-job",
 			}
 
-			converted := converter.ToV2(v1Envelope)
+			converted := converter.ToV2(v1Envelope, false)
 
 			Expect(*converted).To(MatchFields(IgnoreExtras, Fields{
 				"SourceId": Equal(expectedV2Envelope.SourceId),

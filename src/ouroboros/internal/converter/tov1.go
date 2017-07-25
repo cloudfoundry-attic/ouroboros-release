@@ -4,23 +4,44 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	v2 "loggregator/v2"
+	"strconv"
 	"strings"
+
+	v2 "loggregator/v2"
 
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
 )
 
 // ToV1 converts v2 envelopes down to v1 envelopes.
-func ToV1(e *v2.Envelope) *events.Envelope {
+func ToV1(e *v2.Envelope) []*events.Envelope {
+	v1e := createBaseV1(e)
+
+	switch (e.Message).(type) {
+	case *v2.Envelope_Log:
+		convertLog(v1e, e)
+	case *v2.Envelope_Counter:
+		convertCounter(v1e, e)
+	case *v2.Envelope_Gauge:
+		return convertGauge(e)
+	case *v2.Envelope_Timer:
+		convertTimer(v1e, e)
+	default:
+		return nil
+	}
+
+	return []*events.Envelope{v1e}
+}
+
+func createBaseV1(e *v2.Envelope) *events.Envelope {
 	v1e := &events.Envelope{
-		Origin:     proto.String(e.Tags["origin"].GetText()),
-		Deployment: proto.String(e.Tags["deployment"].GetText()),
-		Job:        proto.String(e.Tags["job"].GetText()),
-		Index:      proto.String(e.Tags["index"].GetText()),
+		Origin:     proto.String(getV2Tag(e, "origin")),
+		Deployment: proto.String(getV2Tag(e, "deployment")),
+		Job:        proto.String(getV2Tag(e, "job")),
+		Index:      proto.String(getV2Tag(e, "index")),
 		Timestamp:  proto.Int64(e.Timestamp),
-		Ip:         proto.String(e.Tags["ip"].GetText()),
-		Tags:       convertTags(e.Tags),
+		Ip:         proto.String(getV2Tag(e, "ip")),
+		Tags:       convertTags(e),
 	}
 
 	delete(v1e.Tags, "__v1_type")
@@ -30,46 +51,61 @@ func ToV1(e *v2.Envelope) *events.Envelope {
 	delete(v1e.Tags, "index")
 	delete(v1e.Tags, "ip")
 
-	switch (e.Message).(type) {
-	case *v2.Envelope_Log:
-		convertLog(v1e, e)
-	case *v2.Envelope_Counter:
-		convertCounter(v1e, e)
-	case *v2.Envelope_Gauge:
-		if !convertGauge(v1e, e) {
-			return nil
-		}
-	case *v2.Envelope_Timer:
-		convertTimer(v1e, e)
-	default:
-		return nil
+	if e.SourceId != "" {
+		v1e.Tags["source_id"] = e.SourceId
+	}
+
+	if e.InstanceId != "" {
+		v1e.Tags["instance_id"] = e.InstanceId
 	}
 
 	return v1e
+}
+
+func getV2Tag(e *v2.Envelope, key string) string {
+	if value, ok := e.GetTags()[key]; ok {
+		return value
+	}
+
+	d := e.GetDeprecatedTags()[key]
+	if d == nil {
+		return ""
+	}
+
+	switch v := d.Data.(type) {
+	case *v2.Value_Text:
+		return v.Text
+	case *v2.Value_Integer:
+		return fmt.Sprintf("%d", v.Integer)
+	case *v2.Value_Decimal:
+		return fmt.Sprintf("%f", v.Decimal)
+	default:
+		return ""
+	}
 }
 
 func convertTimer(v1e *events.Envelope, v2e *v2.Envelope) {
 	timer := v2e.GetTimer()
 	v1e.EventType = events.Envelope_HttpStartStop.Enum()
 
-	method := events.Method(events.Method_value[v2e.Tags["method"].GetText()])
-	peerType := events.PeerType(events.PeerType_value[v2e.Tags["peer_type"].GetText()])
+	method := events.Method(events.Method_value[getV2Tag(v2e, "method")])
+	peerType := events.PeerType(events.PeerType_value[getV2Tag(v2e, "peer_type")])
 
 	v1e.HttpStartStop = &events.HttpStartStop{
 		StartTimestamp: proto.Int64(timer.Start),
 		StopTimestamp:  proto.Int64(timer.Stop),
-		RequestId:      convertUUID(parseUUID(v2e.Tags["request_id"].GetText())),
+		RequestId:      convertUUID(parseUUID(getV2Tag(v2e, "request_id"))),
 		ApplicationId:  convertUUID(parseUUID(v2e.SourceId)),
 		PeerType:       &peerType,
 		Method:         &method,
-		Uri:            proto.String(v2e.Tags["uri"].GetText()),
-		RemoteAddress:  proto.String(v2e.Tags["remote_address"].GetText()),
-		UserAgent:      proto.String(v2e.Tags["user_agent"].GetText()),
-		StatusCode:     proto.Int32(int32(v2e.Tags["status_code"].GetInteger())),
-		ContentLength:  proto.Int64(v2e.Tags["content_length"].GetInteger()),
-		InstanceIndex:  proto.Int32(int32(v2e.Tags["instance_index"].GetInteger())),
-		InstanceId:     proto.String(v2e.Tags["instance_id"].GetText()),
-		Forwarded:      strings.Split(v2e.Tags["forwarded"].GetText(), "\n"),
+		Uri:            proto.String(getV2Tag(v2e, "uri")),
+		RemoteAddress:  proto.String(getV2Tag(v2e, "remote_address")),
+		UserAgent:      proto.String(getV2Tag(v2e, "user_agent")),
+		StatusCode:     proto.Int32(int32(atoi(getV2Tag(v2e, "status_code")))),
+		ContentLength:  proto.Int64(atoi(getV2Tag(v2e, "content_length"))),
+		InstanceIndex:  proto.Int32(int32(atoi(getV2Tag(v2e, "instance_index")))),
+		InstanceId:     proto.String(getV2Tag(v2e, "routing_instance_id")),
+		Forwarded:      strings.Split(getV2Tag(v2e, "forwarded"), "\n"),
 	}
 
 	delete(v1e.Tags, "peer_type")
@@ -81,12 +117,21 @@ func convertTimer(v1e *events.Envelope, v2e *v2.Envelope) {
 	delete(v1e.Tags, "status_code")
 	delete(v1e.Tags, "content_length")
 	delete(v1e.Tags, "instance_index")
-	delete(v1e.Tags, "instance_id")
+	delete(v1e.Tags, "routing_instance_id")
 	delete(v1e.Tags, "forwarded")
 }
 
+func atoi(s string) int64 {
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0
+	}
+
+	return i
+}
+
 func convertLog(v1e *events.Envelope, v2e *v2.Envelope) {
-	if v2e.Tags["__v1_type"].GetText() == "Error" {
+	if getV2Tag(v2e, "__v1_type") == "Error" {
 		recoverError(v1e, v2e)
 		return
 	}
@@ -97,19 +142,18 @@ func convertLog(v1e *events.Envelope, v2e *v2.Envelope) {
 		MessageType:    messageType(logMessage),
 		Timestamp:      proto.Int64(v2e.Timestamp),
 		AppId:          proto.String(v2e.SourceId),
-		SourceType:     proto.String(v2e.Tags["source_type"].GetText()),
-		SourceInstance: proto.String(v2e.Tags["source_instance"].GetText()),
+		SourceType:     proto.String(getV2Tag(v2e, "source_type")),
+		SourceInstance: proto.String(v2e.InstanceId),
 	}
 	delete(v1e.Tags, "source_type")
-	delete(v1e.Tags, "source_instance")
 }
 
 func recoverError(v1e *events.Envelope, v2e *v2.Envelope) {
 	logMessage := v2e.GetLog()
 	v1e.EventType = events.Envelope_Error.Enum()
-	code := int32(v2e.Tags["code"].GetInteger())
+	code := int32(atoi(getV2Tag(v2e, "code")))
 	v1e.Error = &events.Error{
-		Source:  proto.String(v2e.Tags["source"].GetText()),
+		Source:  proto.String(getV2Tag(v2e, "source")),
 		Code:    proto.Int32(code),
 		Message: proto.String(string(logMessage.Payload)),
 	}
@@ -122,26 +166,25 @@ func convertCounter(v1e *events.Envelope, v2e *v2.Envelope) {
 	v1e.EventType = events.Envelope_CounterEvent.Enum()
 	v1e.CounterEvent = &events.CounterEvent{
 		Name:  proto.String(counterEvent.Name),
-		Total: proto.Uint64(0),
 		Delta: proto.Uint64(counterEvent.GetDelta()),
+		Total: proto.Uint64(counterEvent.GetTotal()),
 	}
 }
 
-func convertGauge(v1e *events.Envelope, v2e *v2.Envelope) bool {
-	if tryConvertContainerMetric(v1e, v2e) {
-		return true
+func convertGauge(v2e *v2.Envelope) []*events.Envelope {
+	if v1e := tryConvertContainerMetric(v2e); v1e != nil {
+		return []*events.Envelope{v1e}
 	}
 
+	var results []*events.Envelope
 	gaugeEvent := v2e.GetGauge()
-	if len(gaugeEvent.Metrics) != 1 {
-		return false
-	}
 
-	v1e.EventType = events.Envelope_ValueMetric.Enum()
 	for key, metric := range gaugeEvent.Metrics {
+		v1e := createBaseV1(v2e)
+		v1e.EventType = events.Envelope_ValueMetric.Enum()
 		unit, value, ok := extractGaugeValues(metric)
 		if !ok {
-			return false
+			return nil
 		}
 
 		v1e.ValueMetric = &events.ValueMetric{
@@ -149,10 +192,10 @@ func convertGauge(v1e *events.Envelope, v2e *v2.Envelope) bool {
 			Unit:  proto.String(unit),
 			Value: proto.Float64(value),
 		}
-		return true
+		results = append(results, v1e)
 	}
 
-	return false
+	return results
 }
 
 func extractGaugeValues(metric *v2.GaugeValue) (string, float64, bool) {
@@ -163,10 +206,11 @@ func extractGaugeValues(metric *v2.GaugeValue) (string, float64, bool) {
 	return metric.Unit, metric.Value, true
 }
 
-func tryConvertContainerMetric(v1e *events.Envelope, v2e *v2.Envelope) bool {
+func tryConvertContainerMetric(v2e *v2.Envelope) *events.Envelope {
+	v1e := createBaseV1(v2e)
 	gaugeEvent := v2e.GetGauge()
 	if len(gaugeEvent.Metrics) == 1 {
-		return false
+		return nil
 	}
 
 	required := []string{
@@ -180,7 +224,7 @@ func tryConvertContainerMetric(v1e *events.Envelope, v2e *v2.Envelope) bool {
 
 	for _, req := range required {
 		if v, ok := gaugeEvent.Metrics[req]; !ok || v == nil {
-			return false
+			return nil
 		}
 	}
 
@@ -195,12 +239,16 @@ func tryConvertContainerMetric(v1e *events.Envelope, v2e *v2.Envelope) bool {
 		DiskBytesQuota:   proto.Uint64(uint64(gaugeEvent.Metrics["disk_quota"].Value)),
 	}
 
-	return true
+	return v1e
 }
 
-func convertTags(tags map[string]*v2.Value) map[string]string {
-	oldTags := make(map[string]string)
-	for key, value := range tags {
+func convertTags(e *v2.Envelope) map[string]string {
+	oldTags := e.Tags
+	if oldTags == nil {
+		oldTags = make(map[string]string)
+	}
+
+	for key, value := range e.GetDeprecatedTags() {
 		if value == nil {
 			continue
 		}
@@ -213,6 +261,7 @@ func convertTags(tags map[string]*v2.Value) map[string]string {
 			oldTags[key] = fmt.Sprintf("%f", value.GetDecimal())
 		}
 	}
+
 	return oldTags
 }
 

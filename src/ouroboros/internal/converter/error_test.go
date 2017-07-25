@@ -8,7 +8,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 )
 
 var _ = Describe("HTTP", func() {
@@ -29,10 +28,10 @@ var _ = Describe("HTTP", func() {
 			}
 
 			expectedV2Envelope := &v2.Envelope{
-				Tags: map[string]*v2.Value{
+				DeprecatedTags: map[string]*v2.Value{
 					"__v1_type":  {&v2.Value_Text{"Error"}},
 					"source":     {&v2.Value_Text{"test-source"}},
-					"code":       {&v2.Value_Integer{12345}},
+					"code":       {&v2.Value_Text{"12345"}},
 					"origin":     {&v2.Value_Text{"fake-origin"}},
 					"deployment": {&v2.Value_Text{"some-deployment"}},
 					"job":        {&v2.Value_Text{"some-job"}},
@@ -47,15 +46,16 @@ var _ = Describe("HTTP", func() {
 				},
 			}
 
-			converted := converter.ToV2(v1Envelope)
+			converted := converter.ToV2(v1Envelope, false)
 
 			_, err := proto.Marshal(converted)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(*converted).To(MatchFields(IgnoreExtras, Fields{
-				"Tags":    Equal(expectedV2Envelope.Tags),
-				"Message": Equal(expectedV2Envelope.Message),
-			}))
+			for k, v := range expectedV2Envelope.DeprecatedTags {
+				Expect(converted.GetDeprecatedTags()).To(HaveKeyWithValue(k, v))
+			}
+
+			Expect(converted.Message).To(Equal(expectedV2Envelope.Message))
 		})
 	})
 })

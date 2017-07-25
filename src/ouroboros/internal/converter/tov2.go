@@ -3,37 +3,49 @@ package converter
 import (
 	"encoding/binary"
 	"fmt"
-	v2 "loggregator/v2"
 	"strings"
+
+	v2 "loggregator/v2"
 
 	"github.com/cloudfoundry/sonde-go/events"
 )
 
 // ToV2 converts v1 envelopes up to v2 envelopes.
-func ToV2(e *events.Envelope) *v2.Envelope {
+func ToV2(e *events.Envelope, usePreferredTags bool) *v2.Envelope {
 	v2e := &v2.Envelope{
 		Timestamp: e.GetTimestamp(),
-		Tags:      buildTags(e.GetTags()),
 	}
-	v2e.Tags["origin"] = valueText(e.GetOrigin())
-	v2e.Tags["deployment"] = valueText(e.GetDeployment())
-	v2e.Tags["job"] = valueText(e.GetJob())
-	v2e.Tags["index"] = valueText(e.GetIndex())
-	v2e.Tags["ip"] = valueText(e.GetIp())
-	v2e.Tags["__v1_type"] = valueText(e.GetEventType().String())
-	v2e.SourceId = e.GetDeployment() + "/" + e.GetJob()
+
+	initTags(e, v2e, e.GetTags(), usePreferredTags)
+
+	setV2Tag(v2e, "origin", e.GetOrigin(), usePreferredTags)
+	setV2Tag(v2e, "deployment", e.GetDeployment(), usePreferredTags)
+	setV2Tag(v2e, "job", e.GetJob(), usePreferredTags)
+	setV2Tag(v2e, "index", e.GetIndex(), usePreferredTags)
+	setV2Tag(v2e, "ip", e.GetIp(), usePreferredTags)
+	setV2Tag(v2e, "__v1_type", e.GetEventType().String(), usePreferredTags)
+
+	unsetV2Tag(v2e, "source_id")
+	sourceId, ok := e.GetTags()["source_id"]
+	v2e.SourceId = sourceId
+	if !ok {
+		v2e.SourceId = e.GetDeployment() + "/" + e.GetJob()
+	}
+
+	unsetV2Tag(v2e, "instance_id")
+	v2e.InstanceId = e.GetTags()["instance_id"]
 
 	switch e.GetEventType() {
 	case events.Envelope_LogMessage:
-		convertLogMessage(v2e, e)
+		convertLogMessage(v2e, e, usePreferredTags)
 	case events.Envelope_HttpStartStop:
-		convertHTTPStartStop(v2e, e)
+		convertHTTPStartStop(v2e, e, usePreferredTags)
 	case events.Envelope_ValueMetric:
 		convertValueMetric(v2e, e)
 	case events.Envelope_CounterEvent:
 		convertCounterEvent(v2e, e)
 	case events.Envelope_Error:
-		convertError(v2e, e)
+		convertError(v2e, e, usePreferredTags)
 	case events.Envelope_ContainerMetric:
 		convertContainerMetric(v2e, e)
 	}
@@ -41,18 +53,49 @@ func ToV2(e *events.Envelope) *v2.Envelope {
 	return v2e
 }
 
-func buildTags(oldTags map[string]string) map[string]*v2.Value {
-	newTags := make(map[string]*v2.Value)
-	for k, v := range oldTags {
-		newTags[k] = valueText(v)
+// TODO: Do we still need to do an interface?
+func setV2Tag(e *v2.Envelope, key string, value interface{}, usePreferredTags bool) {
+	if usePreferredTags {
+		switch value.(type) {
+		case string:
+			e.GetTags()[key] = value.(string)
+		case int32, int64:
+			e.GetTags()[key] = fmt.Sprintf("%d")
+		case float64:
+			e.GetTags()[key] = fmt.Sprintf("%f")
+		default:
+			e.GetTags()[key] = fmt.Sprintf("%v", value)
+		}
+
+		return
 	}
-	return newTags
+	e.GetDeprecatedTags()[key] = valueText(fmt.Sprintf("%v", value))
 }
 
-func convertError(v2e *v2.Envelope, v1e *events.Envelope) {
+func unsetV2Tag(e *v2.Envelope, key string) {
+	delete(e.GetDeprecatedTags(), key)
+	delete(e.GetTags(), key)
+}
+
+func initTags(v1e *events.Envelope, v2e *v2.Envelope, oldTags map[string]string, usePreferredTags bool) {
+	if usePreferredTags {
+		v2e.Tags = v1e.Tags
+		if v2e.Tags == nil {
+			v2e.Tags = make(map[string]string)
+		}
+	} else {
+		v2e.DeprecatedTags = make(map[string]*v2.Value)
+
+		for k, v := range oldTags {
+			setV2Tag(v2e, k, v, usePreferredTags)
+		}
+	}
+}
+
+func convertError(v2e *v2.Envelope, v1e *events.Envelope, usePreferredTags bool) {
 	t := v1e.GetError()
-	v2e.Tags["source"] = valueText(t.GetSource())
-	v2e.Tags["code"] = valueInt32(t.GetCode())
+	setV2Tag(v2e, "source", t.GetSource(), usePreferredTags)
+	setV2Tag(v2e, "code", t.GetCode(), usePreferredTags)
 
 	v2e.Message = &v2.Envelope_Log{
 		Log: &v2.Log{
@@ -76,7 +119,7 @@ func convertAppID(appID, sourceID string) string {
 	return appID
 }
 
-func convertHTTPStartStop(v2e *v2.Envelope, v1e *events.Envelope) {
+func convertHTTPStartStop(v2e *v2.Envelope, v1e *events.Envelope, usePreferredTags bool) {
 	t := v1e.GetHttpStartStop()
 	v2e.SourceId = convertAppUUID(t.GetApplicationId(), v2e.SourceId)
 	v2e.Message = &v2.Envelope_Timer{
@@ -86,17 +129,17 @@ func convertHTTPStartStop(v2e *v2.Envelope, v1e *events.Envelope) {
 			Stop:  t.GetStopTimestamp(),
 		},
 	}
-	v2e.Tags["request_id"] = valueText(uuidToString(t.GetRequestId()))
-	v2e.Tags["peer_type"] = valueText(t.GetPeerType().String())
-	v2e.Tags["method"] = valueText(t.GetMethod().String())
-	v2e.Tags["uri"] = valueText(t.GetUri())
-	v2e.Tags["remote_address"] = valueText(t.GetRemoteAddress())
-	v2e.Tags["user_agent"] = valueText(t.GetUserAgent())
-	v2e.Tags["status_code"] = valueInt32(t.GetStatusCode())
-	v2e.Tags["content_length"] = valueInt64(t.GetContentLength())
-	v2e.Tags["instance_index"] = valueInt32(t.GetInstanceIndex())
-	v2e.Tags["instance_id"] = valueText(t.GetInstanceId())
-	v2e.Tags["forwarded"] = valueTextSlice(t.GetForwarded())
+	setV2Tag(v2e, "request_id", uuidToString(t.GetRequestId()), usePreferredTags)
+	setV2Tag(v2e, "peer_type", t.GetPeerType().String(), usePreferredTags)
+	setV2Tag(v2e, "method", t.GetMethod().String(), usePreferredTags)
+	setV2Tag(v2e, "uri", t.GetUri(), usePreferredTags)
+	setV2Tag(v2e, "remote_address", t.GetRemoteAddress(), usePreferredTags)
+	setV2Tag(v2e, "user_agent", t.GetUserAgent(), usePreferredTags)
+	setV2Tag(v2e, "status_code", t.GetStatusCode(), usePreferredTags)
+	setV2Tag(v2e, "content_length", t.GetContentLength(), usePreferredTags)
+	setV2Tag(v2e, "instance_index", t.GetInstanceIndex(), usePreferredTags)
+	setV2Tag(v2e, "routing_instance_id", t.GetInstanceId(), usePreferredTags)
+	setV2Tag(v2e, "forwarded", strings.Join(t.GetForwarded(), "\n"), usePreferredTags)
 }
 
 func convertLogMessageType(t events.LogMessage_MessageType) v2.Log_Type {
@@ -104,10 +147,10 @@ func convertLogMessageType(t events.LogMessage_MessageType) v2.Log_Type {
 	return v2.Log_Type(v2.Log_Type_value[name])
 }
 
-func convertLogMessage(v2e *v2.Envelope, e *events.Envelope) {
+func convertLogMessage(v2e *v2.Envelope, e *events.Envelope, usePreferredTags bool) {
 	t := e.GetLogMessage()
-	v2e.Tags["source_type"] = valueText(t.GetSourceType())
-	v2e.Tags["source_instance"] = valueText(t.GetSourceInstance())
+	setV2Tag(v2e, "source_type", t.GetSourceType(), usePreferredTags)
+	v2e.InstanceId = t.GetSourceInstance()
 	v2e.SourceId = convertAppID(t.GetAppId(), v2e.SourceId)
 
 	v2e.Message = &v2.Envelope_Log{
@@ -137,8 +180,8 @@ func convertCounterEvent(v2e *v2.Envelope, e *events.Envelope) {
 	v2e.Message = &v2.Envelope_Counter{
 		Counter: &v2.Counter{
 			Name: t.GetName(),
-			Value: &v2.Counter_Delta{
-				Delta: t.GetDelta(),
+			Value: &v2.Counter_Total{
+				Total: t.GetTotal(),
 			},
 		},
 	}

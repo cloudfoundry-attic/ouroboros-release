@@ -1,8 +1,9 @@
 package converter_test
 
 import (
-	v2 "loggregator/v2"
 	"ouroboros/internal/converter"
+
+	v2 "loggregator/v2"
 
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
@@ -16,11 +17,11 @@ var _ = Describe("LogMessage", func() {
 	Context("given a v2 envelope", func() {
 		It("converts messages to a v1 envelope", func() {
 			envelope := &v2.Envelope{
-				Timestamp: 99,
-				SourceId:  "uuid",
-				Tags: map[string]*v2.Value{
-					"source_type":     {&v2.Value_Text{"test-source-type"}},
-					"source_instance": {&v2.Value_Text{"test-source-instance"}},
+				Timestamp:  99,
+				SourceId:   "uuid",
+				InstanceId: "test-source-instance",
+				DeprecatedTags: map[string]*v2.Value{
+					"source_type": {&v2.Value_Text{"test-source-type"}},
 				},
 				Message: &v2.Envelope_Log{
 					Log: &v2.Log{
@@ -30,7 +31,10 @@ var _ = Describe("LogMessage", func() {
 				},
 			}
 
-			oldEnvelope := converter.ToV1(envelope)
+			envelopes := converter.ToV1(envelope)
+			Expect(len(envelopes)).To(Equal(1))
+			oldEnvelope := envelopes[0]
+
 			Expect(*oldEnvelope).To(MatchFields(IgnoreExtras, Fields{
 				"EventType": Equal(events.Envelope_LogMessage.Enum()),
 				"LogMessage": Equal(&events.LogMessage{
@@ -65,16 +69,16 @@ var _ = Describe("LogMessage", func() {
 			}
 
 			expectedV2Envelope := &v2.Envelope{
-				SourceId: "uuid",
-				Tags: map[string]*v2.Value{
-					"__v1_type":       {&v2.Value_Text{"LogMessage"}},
-					"source_type":     {&v2.Value_Text{"test-source-type"}},
-					"source_instance": {&v2.Value_Text{"test-source-instance"}},
-					"origin":          {&v2.Value_Text{"some-origin"}},
-					"deployment":      {&v2.Value_Text{"some-deployment"}},
-					"job":             {&v2.Value_Text{"some-job"}},
-					"index":           {&v2.Value_Text{"some-index"}},
-					"ip":              {&v2.Value_Text{"some-ip"}},
+				SourceId:   "uuid",
+				InstanceId: "test-source-instance",
+				DeprecatedTags: map[string]*v2.Value{
+					"__v1_type":   {&v2.Value_Text{"LogMessage"}},
+					"source_type": {&v2.Value_Text{"test-source-type"}},
+					"origin":      {&v2.Value_Text{"some-origin"}},
+					"deployment":  {&v2.Value_Text{"some-deployment"}},
+					"job":         {&v2.Value_Text{"some-job"}},
+					"index":       {&v2.Value_Text{"some-index"}},
+					"ip":          {&v2.Value_Text{"some-ip"}},
 				},
 				Message: &v2.Envelope_Log{
 					Log: &v2.Log{
@@ -84,11 +88,11 @@ var _ = Describe("LogMessage", func() {
 				},
 			}
 
-			v2Envelope := converter.ToV2(v1Envelope)
+			v2Envelope := converter.ToV2(v1Envelope, false)
 			Expect(*v2Envelope).To(MatchFields(IgnoreExtras, Fields{
-				"SourceId": Equal(expectedV2Envelope.SourceId),
-				"Tags":     Equal(expectedV2Envelope.Tags),
-				"Message":  Equal(expectedV2Envelope.Message),
+				"SourceId":       Equal(expectedV2Envelope.SourceId),
+				"DeprecatedTags": Equal(expectedV2Envelope.DeprecatedTags),
+				"Message":        Equal(expectedV2Envelope.Message),
 			}))
 		})
 
@@ -104,7 +108,7 @@ var _ = Describe("LogMessage", func() {
 				SourceId: "some-deployment/some-job",
 			}
 
-			converted := converter.ToV2(v1Envelope)
+			converted := converter.ToV2(v1Envelope, false)
 
 			Expect(*converted).To(MatchFields(IgnoreExtras, Fields{
 				"SourceId": Equal(expectedV2Envelope.SourceId),

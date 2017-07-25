@@ -87,7 +87,7 @@ func buildWriter(conf config) ingress.EnvelopeWriter {
 
 		writer = egressv2.NewWriter(
 			fmt.Sprintf("localhost:%d", conf.LoggregatorIngressPort),
-			converter.NewConverter(),
+			converter.NewConverter(false),
 			grpc.WithTransportCredentials(creds),
 		)
 	}

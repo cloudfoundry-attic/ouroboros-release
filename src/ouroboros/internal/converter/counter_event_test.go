@@ -1,8 +1,9 @@
 package converter_test
 
 import (
-	v2 "loggregator/v2"
 	"ouroboros/internal/converter"
+
+	v2 "loggregator/v2"
 
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
@@ -18,19 +19,21 @@ var _ = Describe("CounterEvent", func() {
 				Message: &v2.Envelope_Counter{
 					Counter: &v2.Counter{
 						Name: "name",
-						Value: &v2.Counter_Delta{
-							Delta: 99,
+						Value: &v2.Counter_Total{
+							Total: 99,
 						},
 					},
 				},
 			}
 
-			Expect(*converter.ToV1(envelope)).To(MatchFields(IgnoreExtras, Fields{
+			envelopes := converter.ToV1(envelope)
+			Expect(len(envelopes)).To(Equal(1))
+			Expect(*envelopes[0]).To(MatchFields(IgnoreExtras, Fields{
 				"EventType": Equal(events.Envelope_CounterEvent.Enum()),
 				"CounterEvent": Equal(&events.CounterEvent{
 					Name:  proto.String("name"),
-					Delta: proto.Uint64(99),
-					Total: proto.Uint64(0),
+					Total: proto.Uint64(99),
+					Delta: proto.Uint64(0),
 				}),
 			}))
 		})
@@ -42,21 +45,21 @@ var _ = Describe("CounterEvent", func() {
 				EventType: events.Envelope_CounterEvent.Enum(),
 				CounterEvent: &events.CounterEvent{
 					Name:  proto.String("name"),
-					Delta: proto.Uint64(99),
+					Total: proto.Uint64(99),
 				},
 			}
 			v2Envelope := &v2.Envelope{
 				Message: &v2.Envelope_Counter{
 					Counter: &v2.Counter{
 						Name: "name",
-						Value: &v2.Counter_Delta{
-							Delta: 99,
+						Value: &v2.Counter_Total{
+							Total: 99,
 						},
 					},
 				},
 			}
 
-			Expect(*converter.ToV2(v1Envelope)).To(MatchFields(IgnoreExtras, Fields{
+			Expect(*converter.ToV2(v1Envelope, false)).To(MatchFields(IgnoreExtras, Fields{
 				"Message": Equal(v2Envelope.Message),
 			}))
 		})
