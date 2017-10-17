@@ -33,8 +33,6 @@ instance_groups:
     properties: &metron_agent_properties
       metron_agent:
         deployment: some-domain
-      metron_endpoint:
-        shared_secret: some-secret
       loggregator:
         tls:
           ca_cert: "((loggregator_tls_metron.ca))"
@@ -111,7 +109,6 @@ variables:
     extended_key_usage:
     - client_auth
     - server_auth
-
 - name: ouroboros
   type: certificate
   options:
@@ -120,7 +117,6 @@ variables:
     extended_key_usage:
     - client_auth
     - server_auth
-
 - name: volley
   type: certificate
   options:
@@ -129,7 +125,6 @@ variables:
     extended_key_usage:
     - client_auth
     - server_auth
-
 - name: consul_agent_ca
   type: certificate
   options:
@@ -145,7 +140,6 @@ variables:
     - server_auth
     alternative_names:
     - 127.0.0.1
-
 update:
   canaries: 1
   canary_watch_time: 30000-100000
