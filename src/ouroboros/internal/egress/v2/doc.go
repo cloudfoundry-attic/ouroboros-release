@@ -1,7 +1,7 @@
 package egress
 
 import (
-	loggregator "loggregator/v2"
+	loggregator "code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 )
 
 //go:generate hel

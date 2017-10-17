@@ -3,8 +3,7 @@ package converter_test
 import (
 	"ouroboros/internal/converter"
 
-	v2 "loggregator/v2"
-
+	v2 "code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
 

@@ -1,11 +1,11 @@
 package v2
 
 import (
-	loggregator "loggregator/v2"
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 )
 
 type Assaulter interface {
-	Assault(filter *loggregator.Filter)
+	Assault(filter *loggregator_v2.Selector)
 }
 
 type IDGetter interface {
@@ -41,23 +41,25 @@ func NewEgressV2(
 }
 
 func (e *EgressV2) Start() {
-	firehoseFilter := &loggregator.Filter{}
+	firehoseFilter := &loggregator_v2.Selector{}
 
 	for i := 0; i < e.firehoses; i++ {
 		go e.connManager.Assault(firehoseFilter)
 	}
 
 	for i := 0; i < e.appStreams; i++ {
-		f := &loggregator.Filter{
+		f := &loggregator_v2.Selector{
 			SourceId: e.idStore.Get(),
 		}
 		go e.connManager.Assault(f)
 	}
 
 	for i := 0; i < e.appLogStreams; i++ {
-		f := &loggregator.Filter{
+		f := &loggregator_v2.Selector{
 			SourceId: e.idStore.Get(),
-			Message:  &loggregator.Filter_Log{&loggregator.LogFilter{}},
+			Message: &loggregator_v2.Selector_Log{
+				Log: &loggregator_v2.LogSelector{},
+			},
 		}
 		go e.connManager.Assault(f)
 	}

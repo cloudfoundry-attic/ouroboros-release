@@ -1,10 +1,12 @@
 package v2_test
 
 import (
-	loggregator "loggregator/v2"
 	"math/rand"
 	"sync"
+
 	"volley/v2"
+
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,7 +22,7 @@ var _ = Describe("EgressV2", func() {
 		Eventually(connectionManager.FirehoseCount).Should(Equal(10))
 	})
 
-	Context("when the filter specifes source id", func() {
+	Context("when the selectors specifes source id", func() {
 		It("opens app streams using available appIDs", func() {
 			availableApps := []string{"app-id-1", "app-id-2"}
 			idStore := &spyIDStore{
@@ -37,7 +39,7 @@ var _ = Describe("EgressV2", func() {
 		})
 	})
 
-	Context("when the filter is log specific", func() {
+	Context("when the selector is log specific", func() {
 		It("opens app log streams", func() {
 			availableApps := []string{"app-id-1", "app-id-2"}
 			idStore := &spyIDStore{
@@ -67,15 +69,15 @@ func (s *spyIDStore) Get() string {
 }
 
 type spyConnManager struct {
-	filters []*loggregator.Filter
-	mu      sync.Mutex
+	selectors []*loggregator_v2.Selector
+	mu        sync.Mutex
 }
 
-func (s *spyConnManager) Assault(filter *loggregator.Filter) {
+func (s *spyConnManager) Assault(selector *loggregator_v2.Selector) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.filters = append(s.filters, filter)
+	s.selectors = append(s.selectors, selector)
 }
 
 func (s *spyConnManager) FirehoseCount() int {
@@ -83,8 +85,8 @@ func (s *spyConnManager) FirehoseCount() int {
 	defer s.mu.Unlock()
 
 	var count int
-	emptyFilter := loggregator.Filter{}
-	for _, f := range s.filters {
+	emptyFilter := loggregator_v2.Selector{}
+	for _, f := range s.selectors {
 		if *f == emptyFilter {
 			count++
 		}
@@ -98,7 +100,7 @@ func (s *spyConnManager) SourceCount(apps []string) int {
 	defer s.mu.Unlock()
 
 	var count int
-	for _, f := range s.filters {
+	for _, f := range s.selectors {
 		for _, id := range apps {
 			if f.SourceId == id && f.GetLog() == nil {
 				count++
@@ -114,7 +116,7 @@ func (s *spyConnManager) AppLogCount(apps []string) int {
 	defer s.mu.Unlock()
 
 	var count int
-	for _, f := range s.filters {
+	for _, f := range s.selectors {
 		for _, id := range apps {
 			if f.SourceId == id && f.GetLog() != nil {
 				count++

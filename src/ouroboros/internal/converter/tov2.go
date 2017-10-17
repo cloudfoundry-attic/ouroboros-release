@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	v2 "loggregator/v2"
-
+	v2 "code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"github.com/cloudfoundry/sonde-go/events"
 )
 
@@ -179,10 +178,9 @@ func convertCounterEvent(v2e *v2.Envelope, e *events.Envelope) {
 	t := e.GetCounterEvent()
 	v2e.Message = &v2.Envelope_Counter{
 		Counter: &v2.Counter{
-			Name: t.GetName(),
-			Value: &v2.Counter_Total{
-				Total: t.GetTotal(),
-			},
+			Name:  t.GetName(),
+			Total: t.GetTotal(),
+			Delta: t.GetDelta(),
 		},
 	}
 }

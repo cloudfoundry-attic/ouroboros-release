@@ -3,7 +3,7 @@ package converter_test
 import (
 	"ouroboros/internal/converter"
 
-	v2 "loggregator/v2"
+	v2 "code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
@@ -18,10 +18,8 @@ var _ = Describe("CounterEvent", func() {
 			envelope := &v2.Envelope{
 				Message: &v2.Envelope_Counter{
 					Counter: &v2.Counter{
-						Name: "name",
-						Value: &v2.Counter_Total{
-							Total: 99,
-						},
+						Name:  "name",
+						Total: 99,
 					},
 				},
 			}
@@ -51,10 +49,8 @@ var _ = Describe("CounterEvent", func() {
 			v2Envelope := &v2.Envelope{
 				Message: &v2.Envelope_Counter{
 					Counter: &v2.Counter{
-						Name: "name",
-						Value: &v2.Counter_Total{
-							Total: 99,
-						},
+						Name:  "name",
+						Total: 99,
 					},
 				},
 			}

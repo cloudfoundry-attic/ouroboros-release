@@ -1,8 +1,7 @@
 package converter
 
 import (
-	v2 "loggregator/v2"
-
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"github.com/cloudfoundry/sonde-go/events"
 )
 
@@ -16,10 +15,10 @@ func NewConverter(usePreferredTags bool) Converter {
 	}
 }
 
-func (c Converter) ToV1(e *v2.Envelope) *events.Envelope {
+func (c Converter) ToV1(e *loggregator_v2.Envelope) *events.Envelope {
 	return ToV1(e)[0]
 }
 
-func (c Converter) ToV2(e *events.Envelope) *v2.Envelope {
+func (c Converter) ToV2(e *events.Envelope) *loggregator_v2.Envelope {
 	return ToV2(e, c.usePreferredTags)
 }

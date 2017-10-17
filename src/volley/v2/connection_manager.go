@@ -4,10 +4,10 @@ import (
 	"conf"
 	"context"
 	"log"
-	loggregator "loggregator/v2"
 	"math/rand"
 	"time"
 
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"github.com/cloudfoundry/dropsonde/metricbatcher"
 
 	"google.golang.org/grpc"
@@ -45,23 +45,28 @@ func NewConnectionManager(
 
 // Assault repeatedly establishes connections to the Loggregator V2 API
 // and reads from those connections for a random length of time
-func (m *ConnectionManager) Assault(filter *loggregator.Filter) {
+func (m *ConnectionManager) Assault(s *loggregator_v2.Selector) {
 	for {
-		m.establishConnection(filter)
+		m.establishConnection(s)
 	}
 }
 
-func (m *ConnectionManager) establishConnection(filter *loggregator.Filter) {
+func (m *ConnectionManager) establishConnection(s *loggregator_v2.Selector) {
 	addr := m.addrs[rand.Intn(len(m.addrs))]
 	conn, err := grpc.Dial(addr, m.dialOpts...)
 	if err != nil {
 		log.Fatalf("did not connect: %s", err)
 	}
 	defer conn.Close()
-	c := loggregator.NewEgressClient(conn)
+	c := loggregator_v2.NewEgressClient(conn)
 
 	ctx, _ := context.WithTimeout(context.Background(), time.Minute+(time.Duration(rand.Intn(30000))*time.Millisecond))
-	r, err := c.Receiver(ctx, &loggregator.EgressRequest{UsePreferredTags: m.usePreferredTags, Filter: filter})
+	r, err := c.Receiver(ctx, &loggregator_v2.EgressRequest{
+		UsePreferredTags: m.usePreferredTags,
+		Selectors: []*loggregator_v2.Selector{
+			s,
+		},
+	})
 	if err != nil {
 		log.Printf("could not receive stream: %s", err)
 		return
@@ -70,7 +75,7 @@ func (m *ConnectionManager) establishConnection(filter *loggregator.Filter) {
 	m.connect(r)
 }
 
-func (m *ConnectionManager) connect(r loggregator.Egress_ReceiverClient) {
+func (m *ConnectionManager) connect(r loggregator_v2.Egress_ReceiverClient) {
 	delta := int(m.receiveDelay.Max - m.receiveDelay.Min)
 	var count int
 	for {

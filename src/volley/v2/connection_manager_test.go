@@ -4,20 +4,21 @@ import (
 	"conf"
 	"errors"
 	"log"
-	loggregator "loggregator/v2"
 	"net"
 	"volley/v2"
 
-	"google.golang.org/grpc"
-
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"github.com/cloudfoundry/dropsonde/metricbatcher"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ConnectionManager", func() {
 	var (
-		reqs    chan *loggregator.EgressRequest
+		reqs    chan *loggregator_v2.EgressRequest
 		addrs   []string
 		spies   []*spyLoggregator
 		c       *v2.ConnectionManager
@@ -26,7 +27,7 @@ var _ = Describe("ConnectionManager", func() {
 
 	BeforeEach(func() {
 		batcher = &spyBatcher{}
-		reqs = make(chan *loggregator.EgressRequest, 100)
+		reqs = make(chan *loggregator_v2.EgressRequest, 100)
 
 		addrs = nil
 		spies = nil
@@ -46,19 +47,19 @@ var _ = Describe("ConnectionManager", func() {
 			}
 		})
 
-		It("connects to RLP with the given filter", func() {
-			f := &loggregator.Filter{SourceId: "some-id"}
+		It("connects to RLP with the given selector", func() {
+			f := &loggregator_v2.Selector{SourceId: "some-id"}
 			go c.Assault(f)
 
-			var req *loggregator.EgressRequest
+			var req *loggregator_v2.EgressRequest
 			Eventually(reqs).Should(Receive(&req))
-			Expect(req.GetFilter()).To(Equal(f))
+			Expect(req.GetSelectors()[0]).To(Equal(f))
 			Expect(req.UsePreferredTags).To(BeTrue())
 		})
 
 		It("makes a request to every RLP", func() {
 			for i := 0; i < 10; i++ {
-				f := &loggregator.Filter{SourceId: "some-id"}
+				f := &loggregator_v2.Selector{SourceId: "some-id"}
 				go c.Assault(f)
 			}
 
@@ -76,7 +77,7 @@ var _ = Describe("ConnectionManager", func() {
 			}
 		})
 		It("retries on an error", func() {
-			f := &loggregator.Filter{SourceId: "some-id"}
+			f := &loggregator_v2.Selector{SourceId: "some-id"}
 			go c.Assault(f)
 
 			for _, s := range spies {
@@ -89,10 +90,10 @@ var _ = Describe("ConnectionManager", func() {
 type spyLoggregator struct {
 	receiverCalled chan bool
 	errs           chan error
-	reqs           chan *loggregator.EgressRequest
+	reqs           chan *loggregator_v2.EgressRequest
 }
 
-func startSpyLoggregator(reqs chan *loggregator.EgressRequest) (*spyLoggregator, string) {
+func startSpyLoggregator(reqs chan *loggregator_v2.EgressRequest) (*spyLoggregator, string) {
 	lis, err := net.Listen("tcp", ":0")
 	if err != nil {
 		log.Panicf("failed to listen: %s", err)
@@ -105,7 +106,7 @@ func startSpyLoggregator(reqs chan *loggregator.EgressRequest) (*spyLoggregator,
 	}
 
 	s := grpc.NewServer()
-	loggregator.RegisterEgressServer(s, spy)
+	loggregator_v2.RegisterEgressServer(s, spy)
 	go func() {
 		if err := s.Serve(lis); err != nil {
 			log.Panicf("failed to serve: %s", err)
@@ -115,10 +116,20 @@ func startSpyLoggregator(reqs chan *loggregator.EgressRequest) (*spyLoggregator,
 	return spy, lis.Addr().String()
 }
 
-func (s *spyLoggregator) Receiver(req *loggregator.EgressRequest, rx loggregator.Egress_ReceiverServer) error {
+func (s *spyLoggregator) Receiver(
+	req *loggregator_v2.EgressRequest,
+	rx loggregator_v2.Egress_ReceiverServer,
+) error {
 	s.receiverCalled <- true
 	s.reqs <- req
 	return <-s.errs
+}
+
+func (s *spyLoggregator) BatchedReceiver(
+	req *loggregator_v2.EgressBatchRequest,
+	rx loggregator_v2.Egress_BatchedReceiverServer,
+) error {
+	return grpc.Errorf(codes.Unimplemented, "Not yet implemented")
 }
 
 type spyBatcher struct{}

@@ -3,14 +3,14 @@ package egress_test
 import (
 	"fmt"
 	"log"
-	loggregator "loggregator/v2"
 	"net"
 	egress "ouroboros/internal/egress/v2"
 
-	"google.golang.org/grpc"
-
+	loggregator "code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
+	"google.golang.org/grpc"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

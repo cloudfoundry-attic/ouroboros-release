@@ -148,7 +148,7 @@ var _ = Describe("Connection", func() {
 			go slowConn.Firehose()
 
 			Eventually(handler.firehoseSubs).Should(Receive(Equal("some-sub-id")))
-			go handler.sendLoop(1000000)
+			go handler.sendLoop(10000000)
 			var err error
 			Eventually(handler.errs).Should(Receive(&err))
 			Expect(err).To(HaveOccurred())

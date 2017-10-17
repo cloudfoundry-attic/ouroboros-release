@@ -7,7 +7,8 @@ package egress_test
 
 import (
 	"context"
-	loggregator "loggregator/v2"
+
+	loggregator "code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 
 	"github.com/cloudfoundry/sonde-go/events"
 	"google.golang.org/grpc/metadata"
