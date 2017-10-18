@@ -70,6 +70,9 @@ instance_groups:
   jobs:
     - name: volley
       release: ouroboros
+      consumes:
+        trafficcontroller: {from: trafficcontroller, deployment: cf}
+        reverse_log_proxy: {from: reverse_log_proxy, deployment: cf}
       properties:
         etcd:
           machines: []
