@@ -2,7 +2,7 @@
 name: syslogr
 
 dependencies:
-- golang1.9.1
+- golang1.9.2
 
 files:
 - conf/*.go # gosub
