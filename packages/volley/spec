@@ -2,7 +2,7 @@
 name: volley
 
 dependencies:
-- golang1.9.2
+- golang1.9.4
 
 files:
 - github.com/bradylove/envstruct/*.go
