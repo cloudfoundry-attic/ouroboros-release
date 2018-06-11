@@ -68,35 +68,55 @@ instance_groups:
   networks:
   - name: default
   jobs:
-    - name: volley
-      release: ouroboros
-      consumes:
-        trafficcontroller: {from: trafficcontroller, deployment: cf}
-        reverse_log_proxy: {from: reverse_log_proxy, deployment: cf}
-      properties:
-        etcd:
-          machines: []
-        trafficcontroller:
-          ips: []
-        reverselogproxy:
-          ips: []
-        loggregator:
+  - name: volley
+    release: ouroboros
+    consumes:
+      trafficcontroller: {from: trafficcontroller, deployment: cf}
+      reverse_log_proxy: {from: reverse_log_proxy, deployment: cf}
+      syslogr: {from: syslogr, deployment: ouroboros}
+    properties:
+      etcd:
+        machines: []
+      trafficcontroller:
+        ips: []
+      reverselogproxy:
+        ips: []
+      loggregator:
+        tls:
+          ca: ((loggregator_ca.ca))
+      volley:
+        stream_count: 0
+        container_metric_count: 0
+        recent_log_count: 0
+        rlp:
+          tls:
+            cert: ((volley.certificate))
+            key: ((volley.private_key))
+        cups:
           tls:
             ca: ((loggregator_ca.ca))
-        volley:
-          stream_count: 0
-          container_metric_count: 0
-          recent_log_count: 0
-          rlp:
-            tls:
-              cert: ((volley.certificate))
-              key: ((volley.private_key))
-          cups:
-            tls:
-              ca: ((loggregator_ca.ca))
-              cert: ((volley.certificate))
-              key: ((volley.private_key))
-              common_name: volley
+            cert: ((volley.certificate))
+            key: ((volley.private_key))
+            common_name: volley
+
+- name: syslogr
+  instances: 1
+  azs:
+  - z1
+  vm_type: default
+  persistent_disk_type: default
+  stemcell: default
+  networks:
+  - name: default
+  jobs:
+  - name: syslogr
+    release: ouroboros
+    properties:
+      syslogr:
+        port: 3526
+        https_port: 3527
+        cert: ((syslogr.certificate))
+        key: ((syslogr.private_key))
 
 variables:
 - name: loggregator_ca
@@ -125,6 +145,14 @@ variables:
   options:
     ca: loggregator_ca
     common_name: volley
+    extended_key_usage:
+    - client_auth
+    - server_auth
+- name: syslogr
+  type: certificate
+  options:
+    ca: loggregator_ca
+    common_name: syslogr
     extended_key_usage:
     - client_auth
     - server_auth
