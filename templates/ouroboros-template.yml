@@ -27,7 +27,9 @@ instance_groups:
   - name: consul_agent
     release: consul
     consumes:
-      consul: {from: consul_server, deployment: cf}
+      consul_client: {from: consul_client_link, deployment: cf}
+      consul_common: {from: consul_common_link, deployment: cf}
+      consul_server: nil
   - name: metron_agent
     release: loggregator
     properties: &metron_agent_properties
@@ -85,9 +87,12 @@ instance_groups:
         tls:
           ca: ((loggregator_ca.ca))
       volley:
-        stream_count: 0
+        stream_count: 2
         container_metric_count: 0
         recent_log_count: 0
+        syslog_drains: 1
+        subscription_id: another-subscription-id
+        auth_token: oauth-token
         rlp:
           tls:
             cert: ((volley.certificate))
@@ -119,11 +124,6 @@ instance_groups:
         key: ((syslogr.private_key))
 
 variables:
-- name: loggregator_ca
-  type: certificate
-  options:
-    common_name: loggregatorCA
-    is_ca: true
 - name: loggregator_tls_metron
   type: certificate
   options:
@@ -156,21 +156,6 @@ variables:
     extended_key_usage:
     - client_auth
     - server_auth
-- name: consul_agent_ca
-  type: certificate
-  options:
-    is_ca: true
-    common_name: consulCA
-- name: consul_agent
-  type: certificate
-  options:
-    ca: consul_agent_ca
-    common_name: consul_agent
-    extended_key_usage:
-    - client_auth
-    - server_auth
-    alternative_names:
-    - 127.0.0.1
 update:
   canaries: 1
   canary_watch_time: 30000-100000
